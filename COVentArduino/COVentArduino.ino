@@ -68,6 +68,7 @@ float Clamp01(float v)
 /////////////////////////////
 
 #define DEFAULT_PRINT (&Serial)
+#define DEFAULT_FLOAT_DECIMALS 1
 
 void Ln(Print* p = DEFAULT_PRINT)
 {
@@ -99,7 +100,7 @@ void Cls(Print* p = DEFAULT_PRINT)
     p->print("[2J");
 }
 
-void PrintFloat(float f, int decimals = 10, Print* p = DEFAULT_PRINT)
+void PrintFloat(float f, int decimals = DEFAULT_FLOAT_DECIMALS, Print* p = DEFAULT_PRINT)
 {
     if (f < 0)
     {
@@ -181,17 +182,31 @@ void PrintStringLong(char const* s, long v, Print* p = DEFAULT_PRINT)
     p->print(v);
 }
 
-void PrintFormattedFloat(float f, int decimals = 5, Print* p = DEFAULT_PRINT)
+void PrintStringHex32(const __FlashStringHelper *s, uint32_t v, Print* p = DEFAULT_PRINT)
+{
+    p->print(s);
+    p->print(": 0x");
+    PrintHex32(v);
+}
+
+void PrintStringHex32(char const* s, uint32_t v, Print* p = DEFAULT_PRINT)
+{
+    p->print(s);
+    p->print(": 0x");
+    PrintHex32(v);
+}
+
+void PrintFormattedFloat(float f, int decimals = DEFAULT_FLOAT_DECIMALS, Print* p = DEFAULT_PRINT)
 {
     p->print(": ");
-    if (f < 10000.0f)
-    {
-        p->print(" ");
-    }
-    if (f < 1000.0f)
-    {
-        p->print(" ");
-    }
+    // if (f < 10000.0f)
+    // {
+    //     p->print(" ");
+    // }
+    // if (f < 1000.0f)
+    // {
+    //     p->print(" ");
+    // }
     if (f < 100.0f)
     {
         p->print(" ");
@@ -203,13 +218,13 @@ void PrintFormattedFloat(float f, int decimals = 5, Print* p = DEFAULT_PRINT)
     PrintFloat(f, decimals);
 }
 
-void PrintStringFloat(const __FlashStringHelper *s, float f, int decimals = 5, Print* p = DEFAULT_PRINT)
+void PrintStringFloat(const __FlashStringHelper *s, float f, int decimals = DEFAULT_FLOAT_DECIMALS, Print* p = DEFAULT_PRINT)
 {
     p->print(s);
     PrintFormattedFloat(f, decimals, p);
 }
 
-void PrintStringFloat(char const* s, float f, int decimals = 5, Print* p = DEFAULT_PRINT)
+void PrintStringFloat(char const* s, float f, int decimals = DEFAULT_FLOAT_DECIMALS, Print* p = DEFAULT_PRINT)
 {
     p->print(s);
     PrintFormattedFloat(f, decimals, p);
@@ -500,6 +515,8 @@ public:
     FlowSensor(I2C& i2c)
         : _i2c(i2c)
     {
+        EnsureDeviceIsResponsive();
+
         // Discard the first two bytes, which may or may not be the serial depending on how long it's been since boot
         ReadTwoBytes();
         CommandDelay();
@@ -523,10 +540,8 @@ public:
 
     float GetFlowSlpm()
     {
-        //@TODO: keep state and obviate read if last read too recent
-        delay(1);
-        uint16_t rawValue = ReadTwoBytes();
-        return kMaxSlpm * ((float(rawValue) / 16384) - 0.1f) / 0.8f;
+        UpdateIfRequired();
+        return _flowRate;
     }
 
     uint32_t GetSerial()
@@ -537,6 +552,26 @@ public:
 private:
     const int kI2cAddress = 0x49;
     const float kMaxSlpm = 15.0f;
+
+    void EnsureDeviceIsResponsive()
+    {
+        _i2c.beginTransmission(kI2cAddress);
+        uint8_t error =_i2c.endTransmission();
+        assert(error == 0, F("No device found at requisite I2C address"));
+        CommandDelay();
+    }
+
+    void UpdateIfRequired()
+    {
+        long nowMs = millis();
+        if (nowMs - _lastUpdateMs >= 1)
+        {
+            uint16_t rawValue = ReadTwoBytes();
+            _flowRate = kMaxSlpm * ((float(rawValue) / 16384) - 0.1f) / 0.8f;
+
+            _lastUpdateMs = nowMs;
+        }
+    }
 
     void CommandDelay()
     {
@@ -562,6 +597,106 @@ private:
     I2C& _i2c;
 
     uint32_t _serial;
+    
+    long _lastUpdateMs = 0;
+
+    float _flowRate = 0.0f;
+};
+
+/////////////////////////////
+// Humidity and temperature sensor
+/////////////////////////////
+
+template <class I2C>
+class HumidityTemperatureSensor
+{
+public:
+    HumidityTemperatureSensor(I2C& i2c)
+        : _i2c(i2c)
+    {
+    }
+
+    // std::tuple/tie not available on gcc's current toolchain
+    float GetHumidity01()
+    {
+        UpdateIfRequired();
+
+        return _humidity;
+    }
+
+    float GetTemperature()
+    {
+        UpdateIfRequired();
+
+        return _temperature;
+    }
+
+private:
+    const int kI2cAddress = 0x27;
+
+    void EnsureDeviceIsResponsive()
+    {
+        _i2c.beginTransmission(kI2cAddress);
+        uint8_t error =_i2c.endTransmission();
+        assert(error == 0, F("No device found at requisite I2C address"));
+        delay(10);
+    }
+
+    void UpdateIfRequired()
+    {
+        long nowMs = millis();
+        if (nowMs - _lastUpdateMs >= 1)
+        {
+            _i2c.beginTransmission(kI2cAddress);
+            _i2c.endTransmission();
+            uint32_t rawValue = ReadFourBytes();
+
+            // PrintStringHex32("HTRV", rawValue); DEFAULT_PRINT->print(" ");
+
+            // uint8_t status = rawValue >> 30;
+            uint16_t mask14 = (1 << 14) - 1;
+            uint16_t rawHumidity = (rawValue >> 16) & mask14;
+            uint16_t rawTemperature = (rawValue >> 2) & mask14;
+
+            const uint16_t denominator = (1 << 14) - 2;
+            _humidity = float(rawHumidity) / denominator;
+            _temperature = ((float(rawTemperature) / denominator) * 165) - 40;
+
+            _lastUpdateMs = nowMs;
+        }
+    }
+
+    uint32_t ReadFourBytes()
+    {
+        _i2c.requestFrom(kI2cAddress, 4);
+        
+        uint8_t buf[4];
+        assert(_i2c.available(), F("Expected first I2C byte"));
+        buf[0] = _i2c.read();
+
+        assert(_i2c.available(), F("Expected second I2C byte"));
+        buf[1] = _i2c.read();
+
+        assert(_i2c.available(), F("Expected third I2C byte"));
+        buf[2] = _i2c.read();
+
+        assert(_i2c.available(), F("Expected fourth I2C byte"));
+        buf[3] = _i2c.read();
+
+        assert(!_i2c.available(), F("Expected no more than four I2C bytes"));
+
+        return (uint32_t(buf[0]) << 24)
+        | (uint32_t(buf[1]) << 16)
+        | (uint32_t(buf[2]) << 8)
+        | buf[3];
+    }
+
+    I2C& _i2c;
+
+    long _lastUpdateMs = 0;
+
+    float _humidity = 0.0f;
+    float _temperature = 0.0f;
 };
 
 /////////////////////////////
@@ -603,46 +738,105 @@ void setup()
     while (!Serial);
 }
 
+#define ENABLE_INHALATION_PRESSURE_SENSOR 1
+#define ENABLE_EXHALATION_PRESSURE_SENSOR 1
+#define ENABLE_INHALATION_FLOW_SENSOR 1
+#define ENABLE_EXHALATION_FLOW_SENSOR 1
+#define ENABLE_HUMIDITY_TEMPERATURE_SENSOR 1
+
+#define ENABLE_ALARM 1
+#define ENABLE_O2_VALVE_SERVO 1
+#define ENABLE_AIR_VALVE_SERVO 1
+
 void loop()
 {
+#if ENABLE_INHALATION_PRESSURE_SENSOR
+    DEFAULT_PRINT->print(F("Initializing inhalation pressure sensor...")); Ln();
     PressureSensor inhalationPressureSensor(PIN_INHALE_PRESSURE_SENSOR);
+#endif
+
+#if ENABLE_EXHALATION_PRESSURE_SENSOR
+    DEFAULT_PRINT->print(F("Initializing exhalation pressure sensor...")); Ln();
     PressureSensor exhalationPressureSensor(PIN_EXHALE_PRESSURE_SENSOR);
+#endif
 
+#if ENABLE_INHALATION_FLOW_SENSOR
+    DEFAULT_PRINT->print(F("Initializing inhalation flow sensor (hardware I2C)...")); Ln();
     FlowSensor<typeof(Wire)> inhalationFlowSensor(Wire);
-    //FlowSensor<typeof(SWire)> exhalationFlowSensor(SWire);
-
-    // PrintHex32(0xF2444C22); Ln();
-
-    DEFAULT_PRINT->print(F("Serial: 0x"));
+    DEFAULT_PRINT->print(F("Inhalation serial: 0x"));
     PrintHex32(inhalationFlowSensor.GetSerial());
     Ln();
+#endif
 
+#if ENABLE_EXHALATION_FLOW_SENSOR
+    DEFAULT_PRINT->print(F("Initializing exhalation flow sensor (software I2C)...")); Ln();
+    FlowSensor<typeof(SWire)> exhalationFlowSensor(SWire);
+    DEFAULT_PRINT->print(F("Exhalation serial: 0x"));
+    PrintHex32(exhalationFlowSensor.GetSerial());
+    Ln();
+#endif
+
+#if ENABLE_HUMIDITY_TEMPERATURE_SENSOR
+    DEFAULT_PRINT->print(F("Initializing humidity and temperature sensor...")); Ln();
+    HumidityTemperatureSensor<typeof(Wire)> humidityTemperatureSensor(Wire);
+    Ln();
+#endif
+
+#if ENABLE_ALARM
     NoiseMaker alarm(PIN_ALARM_SPEAKER);
     alarm.SetEnabled(true);
+#endif
 
+#if ENABLE_O2_VALVE_SERVO
     ProportionalValve o2Valve(PIN_O2_VALVE);
+#endif
+#if ENABLE_AIR_VALVE_SERVO
     ProportionalValve airValve(PIN_AIR_VALVE);
+#endif
 
+#if ENABLE_ALARM
     long lastNoiseTimeMs = 0;
+#endif
+
     for (;;)
     {
-        // float ip = inhalationPressureSensor.GetPressurePsi();
-        // float ep = exhalationPressureSensor.GetPressurePsi();
 
-        // PrintStringFloat("Inhalation pressure", ip);
-        // DEFAULT_PRINT->print(" PSI  ");
-        // PrintStringFloat("Exhalation pressure", ep); 
-        // DEFAULT_PRINT->print(" PSI");
-        // Ln();
+#if ENABLE_INHALATION_PRESSURE_SENSOR
+        float inhalationPressure = inhalationPressureSensor.GetPressurePsi();
+        PrintStringFloat(F("Inh P"), inhalationPressure);
+        DEFAULT_PRINT->print(F(" PSI  "));
+#endif
+#if ENABLE_EXHALATION_PRESSURE_SENSOR
+        float exhalationPressure = exhalationPressureSensor.GetPressurePsi();
+        PrintStringFloat(F("Exh P"), exhalationPressure); 
+        DEFAULT_PRINT->print(F(" PSI  "));
+#endif
 
+#if ENABLE_INHALATION_FLOW_SENSOR
         float inhalationFlow = inhalationFlowSensor.GetFlowSlpm();
-        // PrintStringFloat("Inhalation flow", inhalationFlow); Ln();
+        PrintStringFloat(F("Inh F"), inhalationFlow);
+        DEFAULT_PRINT->print(F(" SLPM  "));
+#endif
 
-        // inhaleFlow.Update();
-        // exhaleFlow.Update();
+#if ENABLE_EXHALATION_FLOW_SENSOR
+        float exhalationFlow = exhalationFlowSensor.GetFlowSlpm();
+        PrintStringFloat(F("Exh F"), exhalationFlow);
+        DEFAULT_PRINT->print(F(" SLPM "));
+#endif
 
+#if ENABLE_HUMIDITY_TEMPERATURE_SENSOR
+        float humidity = humidityTemperatureSensor.GetHumidity01();
+        float temperature = humidityTemperatureSensor.GetTemperature();
+        PrintStringFloat(F("H"), humidity * 100);
+        DEFAULT_PRINT->print(F(" %RH  "));
+        PrintStringFloat(F("T"), temperature);
+        DEFAULT_PRINT->print(F(" C  "));
+#endif
+
+        Ln();
+
+#if ENABLE_ALARM
         alarm.Update();
-        
         long nowMs = millis();
         if (nowMs - lastNoiseTimeMs > 1000)
         {
@@ -650,15 +844,16 @@ void loop()
             alarm.Laser();
             lastNoiseTimeMs = nowMs;
         }
+#endif
 
-        //6float seconds = nowMs / 1000.0f;
-        // float position = sin(seconds) * 0.5f + 0.5f;
-        // float position = Clamp01(ep);
-        float position = Clamp01(inhalationFlow / 16.0f);
+#if ENABLE_O2_VALVE_SERVO
+        float o2Position = Clamp01(inhalationFlow / 16.0f);
+        o2Valve.SetPosition(o2Position);
+#endif
 
-        // PrintStringFloat("pos", position); Ln();
-
-        o2Valve.SetPosition(position);
-        airValve.SetPosition(position);
+#if ENABLE_AIR_VALVE_SERVO
+        float airPosition = Clamp01(exhalationFlow / 16.0f);
+        airValve.SetPosition(airPosition);
+#endif
     }
 }
