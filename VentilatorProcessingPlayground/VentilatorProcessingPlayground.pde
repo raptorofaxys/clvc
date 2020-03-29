@@ -16,31 +16,32 @@ long lastSendMs;
 
 void draw()
 {
-    if (port.available() > 0)
-    {
-        byte[] bytes = port.readBytes();
-        for (byte b: bytes)
-        {
-            print((char)b);
-        }
-    }
-    // int size = MachineState.GetSerializedSize();
-    // if (port.available() >= size)
+    // if (port.available() > 0)
     // {
-    //     byte[] bytes = port.readBytes(size);
-
-    //     MachineState ms = MachineState.Deserialize(bytes);
-
-    //     println(ms.InhalationPressure);
-    //     println(ms.InhalationFlow);
-    //     println(ms.ExhalationPressure);
-    //     println(ms.ExhalationFlow);
-    //     println(ms.O2ValveAngle);
-    //     println(ms.AirValveAngle);
-    //     println(ms.SerializedHash);
-    //     println(ms.ComputedHash);
-    //     println(ms.IsValid());
+    //     byte[] bytes = port.readBytes();
+    //     for (byte b: bytes)
+    //     {
+    //         print((char)b);
+    //     }
     // }
+    
+    int size = MachineState.GetSerializedSize();
+    if (port.available() >= size)
+    {
+        byte[] bytes = port.readBytes(size);
+
+        MachineState ms = MachineState.Deserialize(bytes);
+
+        println(ms.InhalationPressure);
+        println(ms.InhalationFlow);
+        println(ms.ExhalationPressure);
+        println(ms.ExhalationFlow);
+        println(ms.O2ValveAngle);
+        println(ms.AirValveAngle);
+        println(ms.SerializedHash);
+        println(ms.ComputedHash);
+        println(ms.IsValid());
+    }
 
     long nowMs = millis();
     if (nowMs - lastSendMs > 1000)

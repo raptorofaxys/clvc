@@ -1,3 +1,5 @@
+import processing.serial.*;
+
 boolean appFullScreen = false;
 boolean appTouchScreen = false;
 boolean appSmooth = false;
@@ -7,6 +9,9 @@ UIGraph graphPressure, graphFlow, graphVolume;
 UITrackBar TrackBar;
 UIGroup RootGroup, MainGroup, GraphGroup, SettingsGroup, RightGroup;
 PFont fontText, fontNumbers;
+
+Serial port;
+long lastSendMs;
 
 void settings()
 {
@@ -50,6 +55,8 @@ void setup()
   RightGroup = new UIVerticalFracGroup(0.15, 1.0, new UIElement[] {TrackBar});
 
   RootGroup = new UIHorizontalFracGroup(0, 0, width, height, new UIElement[] {MainGroup, RightGroup});
+
+  //port = new Serial(this, "COM7", 9600); // Change this to the name of your own com port - might need UI for this
 }
 
 void draw()
@@ -69,6 +76,8 @@ void Update()
   }
   //*/
   RootGroup.Update();
+
+  UpdateSerial();
 }
 
 void Render()
@@ -79,4 +88,44 @@ void Render()
   text("PEEP", 10, 50);
   textFont(fontNumbers, 64);
   text("12.6", 10, 100);
+}
+
+void UpdateSerial()
+{
+  if (port == null)
+  {
+    return;
+  }
+
+  int size = MachineState.GetSerializedSize();
+  if (port.available() >= size)
+  {
+    byte[] bytes = port.readBytes(size);
+
+    MachineState ms = MachineState.Deserialize(bytes);
+
+    println(ms.InhalationPressure);
+    println(ms.InhalationFlow);
+    println(ms.ExhalationPressure);
+    println(ms.ExhalationFlow);
+    println(ms.O2ValveAngle);
+    println(ms.AirValveAngle);
+    println(ms.LastReceiveValid);
+    println(ms.SerializedHash);
+    println(ms.ComputedHash);
+    println(ms.IsValid());
+  }
+
+  long nowMs = millis();
+  if (nowMs - lastSendMs > 1000)
+  {
+    UIState us = new UIState();
+    us.P1 = 1.0f;
+    us.P2 = 2.0f;
+    byte[] packet = us.Serialize();
+
+    port.write(packet);
+
+    lastSendMs = nowMs;
+  }
 }

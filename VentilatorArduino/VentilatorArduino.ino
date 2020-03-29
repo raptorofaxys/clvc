@@ -736,7 +736,7 @@ struct UIState
     float P2 = 0.0f;
 };
 
-struct MachineState
+struct __attribute__((packed)) MachineState
 {
     // int LowO2ServoEndpoint;
     // int HighO2ServoEndpoint;
@@ -749,6 +749,8 @@ struct MachineState
 
     float O2ValveAngle = 0.0f;
     float AirValveAngle = 0.0f;
+
+    int8_t LastReceiveValid = false;
 };
 
 template <class T>
@@ -848,28 +850,31 @@ void loop()
     Blink(100);
     Blink(100);
 
+    bool lastReceiveValid = false;
     for (;;)
     {
         if (Serial.available() >= GetSerializedSize<UIState>())
         {
             UIState us;
-            bool valid = ReceiveState(us);
-            PrintStringFloat("P1", us.P1); Ln();
-            PrintStringFloat("P2", us.P2); Ln();
-            PrintStringInt("valid", valid ? 1 : 0); Ln();
+            lastReceiveValid = ReceiveState(us);
+            // PrintStringFloat("P1", us.P1); Ln();
+            // PrintStringFloat("P2", us.P2); Ln();
+            // PrintStringInt("valid", valid ? 1 : 0); Ln();
         }
-        // MachineState ms;
-        // ms.InhalationPressure = 1.0f;
-        // ms.InhalationFlow = 2.0f;
-        // ms.ExhalationPressure = 3.0f;
-        // ms.ExhalationFlow = 4.0f;
-        // ms.O2ValveAngle = 5.0f;
-        // ms.AirValveAngle = 6.0f;
 
-        // SendState(ms);
-        // Serial.flush();
+        MachineState ms;
+        ms.InhalationPressure = 1.0f;
+        ms.InhalationFlow = 2.0f;
+        ms.ExhalationPressure = 3.0f;
+        ms.ExhalationFlow = 4.0f;
+        ms.O2ValveAngle = 5.0f;
+        ms.AirValveAngle = 6.0f;
+        ms.LastReceiveValid = lastReceiveValid;
 
-        // Blink(200);
+        SendState(ms);
+        Serial.flush();
+
+        Blink(400);
     }
 
 #if ENABLE_INHALATION_PRESSURE_SENSOR
