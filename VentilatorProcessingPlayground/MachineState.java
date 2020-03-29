@@ -4,7 +4,7 @@ import java.nio.ByteOrder;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-class OutputState
+class MachineState
 {
     final static int kNumFloats = 6;
 
@@ -28,7 +28,7 @@ class OutputState
         return SerializedHash == ComputedHash;
     }
 
-    private OutputState() {}
+    private MachineState() {}
 
     public static int GetSerializedSize()
     {
@@ -54,7 +54,7 @@ class OutputState
         return hash;
     }
 
-    public static OutputState Deserialize(byte[] buf)
+    public static MachineState Deserialize(byte[] buf)
     {
         byte[] payload = Arrays.copyOfRange(buf, 0, GetPayloadSize());
         int hash = GetHash(payload);
@@ -62,7 +62,7 @@ class OutputState
         ByteBuffer bb = ByteBuffer.wrap(buf).order(ByteOrder.LITTLE_ENDIAN);
         bb.rewind();
 
-        OutputState os = new OutputState();
+        MachineState os = new MachineState();
 
         os.InhalationPressure = bb.getFloat();
         os.InhalationFlow  = bb.getFloat();

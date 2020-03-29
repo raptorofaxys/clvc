@@ -22,22 +22,22 @@ void draw()
     //         println(b);
     //     }
     // }
-    int size = OutputState.GetSerializedSize();
+    int size = MachineState.GetSerializedSize();
     if (port.available() >= size)
     {
         byte[] bytes = port.readBytes(size);
 
-        OutputState os = OutputState.Deserialize(bytes);
+        MachineState ms = MachineState.Deserialize(bytes);
 
-        println(os.InhalationPressure);
-        println(os.InhalationFlow);
-        println(os.ExhalationPressure);
-        println(os.ExhalationFlow);
-        println(os.O2ValveAngle);
-        println(os.AirValveAngle);
-        println(os.SerializedHash);
-        println(os.ComputedHash);
-        println(os.IsValid());
+        println(ms.InhalationPressure);
+        println(ms.InhalationFlow);
+        println(ms.ExhalationPressure);
+        println(ms.ExhalationFlow);
+        println(ms.O2ValveAngle);
+        println(ms.AirValveAngle);
+        println(ms.SerializedHash);
+        println(ms.ComputedHash);
+        println(ms.IsValid());
 
         // for (byte b: bytes)
         // {

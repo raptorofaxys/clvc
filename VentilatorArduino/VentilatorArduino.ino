@@ -716,9 +716,9 @@ public:
 		_servo.attach(pin, 500, 2350);
 	}
 
-	void SetPosition(float position01)
+	void SetPmsition(float pmsition01)
 	{
-		int angle = int(0 + (position01) * 180);
+		int angle = int(0 + (pmsition01) * 180);
 		_servo.write(angle);
 	}
 
@@ -730,14 +730,14 @@ private:
 // Initialization and control loop
 /////////////////////////////
 
-struct InputState
+struct UIState
 {
     int MeaningOfLife = 24;
     float Peep = 0.0f;
     // etc.
 };
 
-struct OutputState
+struct MachineState
 {
     // int LowO2ServoEndpoint;
     // int HighO2ServoEndpoint;
@@ -831,15 +831,15 @@ void loop()
 
     for (;;)
     {
-        OutputState os;
-        os.InhalationPressure = 1.0f;
-        os.InhalationFlow = 2.0f;
-        os.ExhalationPressure = 3.0f;
-        os.ExhalationFlow = 4.0f;
-        os.O2ValveAngle = 5.0f;
-        os.AirValveAngle = 6.0f;
+        MachineState ms;
+        ms.InhalationPressure = 1.0f;
+        ms.InhalationFlow = 2.0f;
+        ms.ExhalationPressure = 3.0f;
+        ms.ExhalationFlow = 4.0f;
+        ms.O2ValveAngle = 5.0f;
+        ms.AirValveAngle = 6.0f;
 
-        SendState(os);
+        SendState(ms);
         Serial.flush();
 
         Blink(200);
@@ -942,13 +942,13 @@ void loop()
 #endif
 
 #if ENABLE_O2_VALVE_SERVO
-        float o2Position = Clamp01(inhalationFlow / 16.0f);
-        o2Valve.SetPosition(o2Position);
+        float o2Pmsition = Clamp01(inhalationFlow / 16.0f);
+        o2Valve.SetPmsition(o2Pmsition);
 #endif
 
 #if ENABLE_AIR_VALVE_SERVO
-        float airPosition = Clamp01(exhalationFlow / 16.0f);
-        airValve.SetPosition(airPosition);
+        float airPmsition = Clamp01(exhalationFlow / 16.0f);
+        airValve.SetPmsition(airPmsition);
 #endif
     }
 }
