@@ -1,3 +1,18 @@
-.vscode/*
+### Project-specific
 Pictures/*
 STL/*
+
+### VSCode
+.vscode/*
+
+### Processing
+[Bb]uild/
+
+### OS generated
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
