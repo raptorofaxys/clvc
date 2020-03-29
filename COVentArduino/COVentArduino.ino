@@ -20,8 +20,8 @@
 /////////////////////////////
 
 // Beware: some pins may not be able to assume all functions
-const int PIN_SOFTWARE_I2C_SDA = 2;
-const int PIN_SOFTWARE_I2C_SCL = 3;
+const int PIN_SOFTWARE_I2C_SDA = A2;
+const int PIN_SOFTWARE_I2C_SCL = A3;
 
 const int PIN_INHALE_PRESSURE_SENSOR = A0;
 const int PIN_EXHALE_PRESSURE_SENSOR = A1;
@@ -35,25 +35,30 @@ const int PIN_AIR_VALVE = 5;
 // General utilities
 /////////////////////////////
 
+void Blink(long ms = 250)
+{
+    digitalWrite(13, HIGH);
+    delay(ms);
+    digitalWrite(13, LOW);
+    delay(ms);
+}
+
 #define assert(x, msg) if (!(x)) { Halt(__LINE__, msg); }
 #define verify(x, msg) assert(x, msg)
 #define HALT() Halt(__LINE__, "Halt")
-inline void Halt(int line, const __FlashStringHelper* msg)
-{
-    Serial.print(F("Halt: L"));
-    Serial.println(line);
-    Serial.println(msg);
-    Serial.flush();
-    for (;;) {}
-}
 
-inline void Halt(int line, const char* msg)
+template <class T>
+void Halt(int line, const T* msg)
 {
     Serial.print(F("Halt: L"));
     Serial.println(line);
     Serial.println(msg);
     Serial.flush();
-    for (;;) {}
+    pinMode(13, OUTPUT);
+    for (;;)
+    {
+        Blink(250);
+    }
 }
 
 #define ARRAY_COUNT(x) (static_cast<int>(sizeof(x) / sizeof(x[0])))
@@ -68,7 +73,7 @@ float Clamp01(float v)
 /////////////////////////////
 
 #define DEFAULT_PRINT (&Serial)
-#define DEFAULT_FLOAT_DECIMALS 1
+#define DEFAULT_FLOAT_DECIMALS 2
 
 void Ln(Print* p = DEFAULT_PRINT)
 {
@@ -729,6 +734,8 @@ SoftwareWire SWire(PIN_SOFTWARE_I2C_SDA, PIN_SOFTWARE_I2C_SCL);
 
 void setup()
 {
+    pinMode(13, OUTPUT);
+
     Wire.begin();
     Wire.setClock(100000);
     SWire.begin();
@@ -742,7 +749,7 @@ void setup()
 #define ENABLE_EXHALATION_PRESSURE_SENSOR 1
 #define ENABLE_INHALATION_FLOW_SENSOR 1
 #define ENABLE_EXHALATION_FLOW_SENSOR 1
-#define ENABLE_HUMIDITY_TEMPERATURE_SENSOR 1
+#define ENABLE_HUMIDITY_TEMPERATURE_SENSOR 0
 
 #define ENABLE_ALARM 1
 #define ENABLE_O2_VALVE_SERVO 1
@@ -750,6 +757,10 @@ void setup()
 
 void loop()
 {
+    Blink(100);
+    Blink(100);
+    Blink(100);
+
 #if ENABLE_INHALATION_PRESSURE_SENSOR
     DEFAULT_PRINT->print(F("Initializing inhalation pressure sensor...")); Ln();
     PressureSensor inhalationPressureSensor(PIN_INHALE_PRESSURE_SENSOR);
