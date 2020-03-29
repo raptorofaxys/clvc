@@ -732,7 +732,6 @@ private:
 
 struct InputState
 {
-public:
     int MeaningOfLife = 24;
     float Peep = 0.0f;
     // etc.
@@ -740,7 +739,6 @@ public:
 
 struct OutputState
 {
-public:
     // int LowO2ServoEndpoint;
     // int HighO2ServoEndpoint;
 
@@ -754,9 +752,50 @@ public:
     float AirValveAngle = 0.0f;
 };
 
-void SendState(const struct OutputState& outputState)
+template <class T>
+int32_t GetHash(const T& t)
 {
+    // FNV-1a
     
+    int32_t hash = 0x811c9dc5;
+    const int8_t* p = reinterpret_cast<const int8_t*>(&t);
+    const int8_t* pEnd = reinterpret_cast<const int8_t*>(&t) + sizeof(t);
+    for (; p < pEnd; ++p)
+    {
+        hash ^= *p;
+        // PrintStringHex32("Hash after XOR ", hash); Ln();
+        hash *= 0x01000193;
+        // PrintStringHex32("Hash after mult", hash); Ln();
+    }
+
+    return hash;
+}
+
+template <class T>
+void SendBinary(const T& t)
+{
+    const uint8_t* p = reinterpret_cast<const uint8_t*>(&t);
+    const uint8_t* pEnd = reinterpret_cast<const uint8_t*>(&t) + sizeof(T);
+    for (; p < pEnd; ++p)
+    {
+        Serial.write(*p);
+    }
+}
+
+template <class T>
+void SendState(const T& state)
+{
+    uint32_t hash = GetHash(state);
+    SendBinary(state);
+    SendBinary(hash);
+}
+
+template <class T>
+void ReceiveState(const T& state)
+{
+    uint32_t hash = GetHash(state);
+    SendBinary(state);
+    SendBinary(hash);
 }
 
 SoftwareWire SWire(PIN_SOFTWARE_I2C_SDA, PIN_SOFTWARE_I2C_SCL);
@@ -789,6 +828,22 @@ void loop()
     Blink(100);
     Blink(100);
     Blink(100);
+
+    for (;;)
+    {
+        OutputState os;
+        os.InhalationPressure = 1.0f;
+        os.InhalationFlow = 2.0f;
+        os.ExhalationPressure = 3.0f;
+        os.ExhalationFlow = 4.0f;
+        os.O2ValveAngle = 5.0f;
+        os.AirValveAngle = 6.0f;
+
+        SendState(os);
+        Serial.flush();
+
+        Blink(200);
+    }
 
 #if ENABLE_INHALATION_PRESSURE_SENSOR
     DEFAULT_PRINT->print(F("Initializing inhalation pressure sensor...")); Ln();
