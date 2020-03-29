@@ -259,10 +259,12 @@ void loop()
 
     for (;;)
     {
-        // long nowMs = millis();
-        // float seconds = nowMs / 1000.0f;
-        // float position = sin(seconds) * 0.5f + 0.5f;
-        float position = 0.0f;
+        long nowMs = millis();
+        float seconds = nowMs / 1000.0f;
+        float position = sin(seconds * 0.3f) * 0.85f + 0.5f;
+        position = Clamp01(position);
+
+        PrintStringFloat("position", position); Ln();
 
 #if ENABLE_O2_VALVE_SERVO
         o2Valve.SetPosition(position);
