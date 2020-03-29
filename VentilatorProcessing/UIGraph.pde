@@ -1,9 +1,8 @@
-class UIGraph extends UIElement
+class UIGraph extends UIElementRT
 {
   private int _sampleCount;
   private float[] _samples;
   private float _originY;
-
   private int _sampleIndex;
 
   public UIGraph(float fracW, float fracH, int sampleCount, float originY)
@@ -36,11 +35,12 @@ class UIGraph extends UIElement
 
   public void Update()
   {
+    super.Update();
     NextSample();
     _samples[_sampleIndex] = noise(second() + millis()) - 0.5;
   }
 
-  public void Render()
+  protected void Draw()
   {
     int x = Transform.GetX();
     int y = Transform.GetY();
@@ -48,25 +48,25 @@ class UIGraph extends UIElement
     int h = Transform.GetH();
     float sampleWidth = (float)w / (float)_sampleCount;
 
-    float x1 = _sampleIndex * sampleWidth + x;
+    float x1 = _sampleIndex * sampleWidth;
     float x0 = x1 - sampleWidth;
-    noStroke();
+    _renderTarget.noStroke();
     for (int i = 0; i < 5; i++)
     {
-      fill(0, 255 * (5 - i) / 5);
-      rect(x1 + sampleWidth * i, y, sampleWidth, h);
+      _renderTarget.fill(0, 255 * (5 - i) / 5);
+      _renderTarget.rect(x1 + sampleWidth * i, y, sampleWidth, h);
     }
 
     if (_sampleIndex != _sampleCount - 1)
     {
       float halfHeight = h * 0.5;
-      float y0 = -GetPrevSample() * h + halfHeight + y;
-      float y1 = -GetCurrentSample() * h + halfHeight + y;
+      float y0 = -GetPrevSample() * h + halfHeight;
+      float y1 = -GetCurrentSample() * h + halfHeight;
 
-      noFill();
-      stroke(#00ff99);
-      strokeWeight(1);
-      line((int)x0, (int)y0, (int)x1, (int)y1);
+      _renderTarget.noFill();
+      _renderTarget.stroke(#00ff99);
+      _renderTarget.strokeWeight(1);
+      _renderTarget.line((int)x0, (int)y0, (int)x1, (int)y1);
     }
   }
 }
