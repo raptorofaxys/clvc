@@ -3,9 +3,10 @@ boolean appTouchScreen = false;
 boolean appSmooth = false;
 
 UIButton b1, b2, b3, b4;
-UIGraph graph1, graph2, graph3;
+UIGraph graphPressure, graphFlow, graphVolume;
 UITrackBar TrackBar;
 UIGroup RootGroup, MainGroup, GraphGroup, SettingsGroup, RightGroup;
+PFont fontText, fontNumbers;
 
 void settings()
 {
@@ -29,16 +30,20 @@ void setup()
   {
     noCursor();
   }
+
+  fontText = loadFont("SegoeUI_Bold_48.vlw");
+  fontNumbers = loadFont("Monospaced_64.vlw");
+
   TrackBar = new UITrackBar(1.0, 1.0);
-  b1 = new UIButton(0.4, 1.0);
+  b1 = new UIButton(0.2, 1.0);
   b2 = new UIButton(0.2, 1.0);
   b3 = new UIButton(0.2, 1.0);
   b4 = new UIButton(0.2, 1.0);
-  graph1 = new UIGraph(1.0, 1.0, 512, 0.0);
-  graph2 = new UIGraph(1.0, 1.0, 512, 0.0);
-  graph3 = new UIGraph(1.0, 1.0, 512, 0.0);
+  graphPressure = new UIGraph(1.0, 1.0, 512, 0.0);
+  graphFlow = new UIGraph(1.0, 1.0, 512, 0.0);
+  graphVolume = new UIGraph(1.0, 1.0, 512, 0.0);
 
-  GraphGroup = new UIVerticalFracGroup(1.0, 0.8, new UIElement[] {graph1, graph2, graph3});
+  GraphGroup = new UIVerticalFracGroup(1.0, 0.8, new UIElement[] {graphPressure, graphFlow, graphVolume});
   SettingsGroup = new UIHorizontalFracGroup(1.0, 0.2, new UIElement[] {b1, b2, b3, b4});
   MainGroup = new UIVerticalFracGroup(0.85, 1.0, new UIElement[] {GraphGroup, SettingsGroup});
 
@@ -68,5 +73,10 @@ void Update()
 
 void Render()
 {
+  background(0);
   RootGroup.Render();
+  textFont(fontText, 48);
+  text("PEEP", 10, 50);
+  textFont(fontNumbers, 64);
+  text("12.6", 10, 100);
 }
