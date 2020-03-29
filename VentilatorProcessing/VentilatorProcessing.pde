@@ -1,40 +1,72 @@
-  // Dimmer - sends bytes over a serial port
+boolean appFullScreen = false;
+boolean appTouchScreen = false;
+boolean appSmooth = false;
 
-  // by David A. Mellis
-  // This example code is in the public domain.
+UIButton b1, b2, b3, b4;
+UIGraph graph1, graph2, graph3;
+UITrackBar TrackBar;
+UIGroup RootGroup, MainGroup, GraphGroup, SettingsGroup, RightGroup;
 
-  import processing.serial.*;
-  Serial port;
+void settings()
+{
+  if (appFullScreen)
+    fullScreen(P2D);
+  else
+    size(800, 600, P2D);
 
-  void setup() {
-    size(256, 150);
+  if (appSmooth)
+    smooth();
+  else
+    noSmooth();
+}
 
-    println("Available serial ports:");
-    // if using Processing 2.1 or later, use Serial.printArray()
-    println(Serial.list());
+void setup()
+{
+  surface.setResizable(true);
+  background(0);
 
-    // Uses the first port in this list (number 0). Change this to select the port
-    // corresponding to your Arduino board. The last parameter (e.g. 9600) is the
-    // speed of the communication. It has to correspond to the value passed to
-    // Serial.begin() in your Arduino sketch.
-    port = new Serial(this, Serial.list()[0], 9600);
-
-    // If you know the name of the port used by the Arduino board, you can specify
-    // it directly like this.
-    //port = new Serial(this, "COM1", 9600);
+  if (appTouchScreen)
+  {
+    noCursor();
   }
+  TrackBar = new UITrackBar(1.0, 1.0);
+  b1 = new UIButton(0.4, 1.0);
+  b2 = new UIButton(0.2, 1.0);
+  b3 = new UIButton(0.2, 1.0);
+  b4 = new UIButton(0.2, 1.0);
+  graph1 = new UIGraph(1.0, 1.0, 512, 0.0);
+  graph2 = new UIGraph(1.0, 1.0, 512, 0.0);
+  graph3 = new UIGraph(1.0, 1.0, 512, 0.0);
 
-  void draw() {
-    // draw a gradient from black to white
-    for (int i = 0; i < 256; i++) {
-      stroke(i);
-      line(i, 0, i, 150);
-    }
+  GraphGroup = new UIVerticalFracGroup(1.0, 0.8, new UIElement[] {graph1, graph2, graph3});
+  SettingsGroup = new UIHorizontalFracGroup(1.0, 0.2, new UIElement[] {b1, b2, b3, b4});
+  MainGroup = new UIVerticalFracGroup(0.85, 1.0, new UIElement[] {GraphGroup, SettingsGroup});
 
-    // write the current X-position of the mouse to the serial port as
-    // a single byte
-    int x = mouseX;
-    if (x < 10) x = 0;
-    if (x >= 246) x = 255;
-    port.write(x);
+  RightGroup = new UIVerticalFracGroup(0.15, 1.0, new UIElement[] {TrackBar});
+
+  RootGroup = new UIHorizontalFracGroup(0, 0, width, height, new UIElement[] {MainGroup, RightGroup});
+}
+
+void draw()
+{
+  Update();
+  Render();
+}
+
+void Update()
+{
+  //*
+  // For testing resizable window with the lack of a proper resize event
+  if (!appFullScreen)
+  {
+    RootGroup.Transform.SetWH(width, height);
+    RootGroup.UpdateChildrenLayout();
   }
+  //*/
+  RootGroup.Update();
+}
+
+void Render()
+{
+  RootGroup.Render();
+}
