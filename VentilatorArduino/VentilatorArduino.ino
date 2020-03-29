@@ -730,6 +730,35 @@ private:
 // Initialization and control loop
 /////////////////////////////
 
+struct InputState
+{
+public:
+    int MeaningOfLife = 24;
+    float Peep = 0.0f;
+    // etc.
+};
+
+struct OutputState
+{
+public:
+    // int LowO2ServoEndpoint;
+    // int HighO2ServoEndpoint;
+
+    float InhalationPressure = 0.0f;
+    float InhalationFlow = 0.0f;
+
+    float ExhalationPressure = 0.0f;
+    float ExhalationFlow = 0.0f;
+
+    float O2ValveAngle = 0.0f;
+    float AirValveAngle = 0.0f;
+};
+
+void SendState(const struct OutputState& outputState)
+{
+    
+}
+
 SoftwareWire SWire(PIN_SOFTWARE_I2C_SDA, PIN_SOFTWARE_I2C_SCL);
 
 void setup()
