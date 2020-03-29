@@ -4,7 +4,7 @@ import java.nio.ByteOrder;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-class MachineState
+class MachineState extends SerializedState
 {
     final static int kNumFloats = 6;
 
@@ -19,9 +19,6 @@ class MachineState
 
     public float O2ValveAngle = 0.0f;
     public float AirValveAngle = 0.0f;
-
-    public int SerializedHash;
-    public int ComputedHash;
 
     public boolean IsValid()
     {
@@ -40,27 +37,13 @@ class MachineState
         return kNumFloats * 4;
     }
 
-    static int GetHash(byte[] buf)
-    {
-        int hash = 0x811c9dc5;
-        for (byte b: buf)
-        {
-            hash ^= b;
-            // PApplet.println("Hash after XOR : " + Integer.toHexString(hash));
-            hash *= 0x01000193;
-            // PApplet.println("Hash after mult: " + Integer.toHexString(hash));
-        }
-        
-        return hash;
-    }
-
     public static MachineState Deserialize(byte[] buf)
     {
-        byte[] payload = Arrays.copyOfRange(buf, 0, GetPayloadSize());
-        int hash = GetHash(payload);
+//        byte[] payload = Arrays.copyOfRange(buf, 0, GetPayloadSize());
+        int hash = VUtils.GetHash(buf, 0, GetPayloadSize());
 
         ByteBuffer bb = ByteBuffer.wrap(buf).order(ByteOrder.LITTLE_ENDIAN);
-        bb.rewind();
+        // bb.rewind();
 
         MachineState os = new MachineState();
 

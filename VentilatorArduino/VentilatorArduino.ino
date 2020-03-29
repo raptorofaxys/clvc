@@ -732,9 +732,8 @@ private:
 
 struct UIState
 {
-    int MeaningOfLife = 24;
-    float Peep = 0.0f;
-    // etc.
+    float P1 = 0.0f;
+    float P2 = 0.0f;
 };
 
 struct MachineState
@@ -772,6 +771,12 @@ int32_t GetHash(const T& t)
 }
 
 template <class T>
+int GetSerializedSize()
+{
+    return sizeof(T) + 4;
+}
+
+template <class T>
 void SendBinary(const T& t)
 {
     const uint8_t* p = reinterpret_cast<const uint8_t*>(&t);
@@ -783,19 +788,33 @@ void SendBinary(const T& t)
 }
 
 template <class T>
+void ReadBinary(T& t)
+{
+    uint8_t* p = reinterpret_cast<uint8_t*>(&t);
+    uint8_t* pEnd = reinterpret_cast<uint8_t*>(&t) + sizeof(T);
+    for (; p < pEnd; ++p)
+    {
+        *p = Serial.read();
+    }
+}
+
+template <class T>
 void SendState(const T& state)
 {
-    uint32_t hash = GetHash(state);
+    int32_t hash = GetHash(state);
     SendBinary(state);
     SendBinary(hash);
 }
 
 template <class T>
-void ReceiveState(const T& state)
+bool ReceiveState(T& state)
 {
-    uint32_t hash = GetHash(state);
-    SendBinary(state);
-    SendBinary(hash);
+    ReadBinary(state);
+    int32_t serializedHash;
+    ReadBinary(serializedHash);
+    int32_t computedHash = GetHash(state);
+
+    return computedHash == serializedHash;
 }
 
 SoftwareWire SWire(PIN_SOFTWARE_I2C_SDA, PIN_SOFTWARE_I2C_SCL);
@@ -831,18 +850,26 @@ void loop()
 
     for (;;)
     {
-        MachineState ms;
-        ms.InhalationPressure = 1.0f;
-        ms.InhalationFlow = 2.0f;
-        ms.ExhalationPressure = 3.0f;
-        ms.ExhalationFlow = 4.0f;
-        ms.O2ValveAngle = 5.0f;
-        ms.AirValveAngle = 6.0f;
+        if (Serial.available() >= GetSerializedSize<UIState>())
+        {
+            UIState us;
+            bool valid = ReceiveState(us);
+            PrintStringFloat("P1", us.P1); Ln();
+            PrintStringFloat("P2", us.P2); Ln();
+            PrintStringInt("valid", valid ? 1 : 0); Ln();
+        }
+        // MachineState ms;
+        // ms.InhalationPressure = 1.0f;
+        // ms.InhalationFlow = 2.0f;
+        // ms.ExhalationPressure = 3.0f;
+        // ms.ExhalationFlow = 4.0f;
+        // ms.O2ValveAngle = 5.0f;
+        // ms.AirValveAngle = 6.0f;
 
-        SendState(ms);
-        Serial.flush();
+        // SendState(ms);
+        // Serial.flush();
 
-        Blink(200);
+        // Blink(200);
     }
 
 #if ENABLE_INHALATION_PRESSURE_SENSOR
