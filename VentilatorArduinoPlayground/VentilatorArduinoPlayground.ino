@@ -264,7 +264,7 @@ void loop()
         float position = sin(seconds * 0.3f) * 0.85f + 0.5f;
         position = Clamp01(position);
 
-        PrintStringFloat("position", position); Ln();
+        //PrintStringFloat("position", position); Ln();
 
 #if ENABLE_O2_VALVE_SERVO
         o2Valve.SetPosition(position);
