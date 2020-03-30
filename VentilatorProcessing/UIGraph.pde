@@ -2,19 +2,27 @@ class UIGraph extends UIElementRT
 {
   private int _sampleCount;
   private float[] _samples;
-  private float _originY;
+  private float _rangeMinY;
+  private float _rangeMaxY;
+  private float _rangeHeight;
+  private color _colorLine;
+  private color _colorDot;
   private int _sampleIndex;
   private int _currentX;
   private int _currentY;
+  private int _originY;
 
   private int FADE_SAMPLES_COUNT = 5;
 
-  public UIGraph(float fracW, float fracH, int sampleCount, float originY)
+  public UIGraph(float fracW, float fracH, int sampleCount, float rangeMinY, float rangeMaxY, color colorLine)
   {
     super(fracW, fracH);
     _sampleCount = sampleCount;
     _samples = new float[sampleCount];
-    _originY = originY;
+    _rangeMinY = rangeMinY;
+    _rangeMaxY = rangeMaxY;
+    _colorLine = colorLine;
+    _colorDot = colorLine;
   }
 
   private void NextSample()
@@ -37,11 +45,22 @@ class UIGraph extends UIElementRT
     return _samples[_sampleIndex];
   }
 
+  private float GetYPosition(float y)
+  {
+    return Transform.GetH() - (y - _rangeMinY) * _rangeHeight;
+  }
+
+  protected void OnResize()
+  {
+    super.OnResize();
+    _rangeHeight = Transform.GetH() / (_rangeMaxY - _rangeMinY);
+  }
+
   public void Update()
   {
     super.Update();
     NextSample();
-    _samples[_sampleIndex] = noise(second() + millis()) - 0.5;
+    _samples[_sampleIndex] = noise(second() + millis()) * 2.0 - 1.0;
   }
 
   protected void Draw()
@@ -58,18 +77,19 @@ class UIGraph extends UIElementRT
     for (int i = 0; i < FADE_SAMPLES_COUNT; i++)
     {
       // This does not produce a linear fade but good enough for now
-      _renderTarget.fill(0, 255 * (FADE_SAMPLES_COUNT - i) / FADE_SAMPLES_COUNT);
-      _renderTarget.rect(x1 + sampleWidth * i, 0, sampleWidth, h);
+      _renderTarget.fill(30, 255 * (FADE_SAMPLES_COUNT - i) / FADE_SAMPLES_COUNT);
+      _renderTarget.rect(x1 + sampleWidth * i, 2, sampleWidth, h - 4);
     }
 
     if (_sampleIndex != _sampleCount - 1)
     {
-      float halfHeight = h * 0.5;
-      float y0 = -GetPrevSample() * h + halfHeight;
-      float y1 = -GetCurrentSample() * h + halfHeight;
+      // Invert y values because Processing coordinate system 0 is top
+      float y0 = GetYPosition(GetPrevSample());
+      float y1 = GetYPosition(GetCurrentSample());
+      _originY = (int)GetYPosition(0);
 
       _renderTarget.noFill();
-      _renderTarget.stroke(#00ff99);
+      _renderTarget.stroke(_colorLine);
       _renderTarget.strokeWeight(1);
       _currentX = (int)x1;
       _currentY = (int)y1;
@@ -80,8 +100,14 @@ class UIGraph extends UIElementRT
   public void Render()
   {
     super.Render();
-    fill(#33ffbb);
+    int x = Transform.GetX();
+    int y = Transform.GetY();
+    noFill();
+    stroke(90);
+    strokeWeight(1);
+    line(0, _originY + y, Transform.GetW(), _originY + y);
+    fill(_colorDot);
     noStroke();
-    circle(_currentX + Transform.GetX(), _currentY + Transform.GetY(), 5);
+    circle(_currentX + x, _currentY + y, 5);
   }
 }
