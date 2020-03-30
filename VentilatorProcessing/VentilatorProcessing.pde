@@ -66,7 +66,7 @@ void setup()
   RightGroup = new UIVerticalFracGroup(0.1, 1.0, new UIElement[] {TrackBar});
   RootGroup = new UIHorizontalFracGroup(0, 0, width, height, new UIElement[] {MainGroup, RightGroup});
 
-  //port = new Serial(this, "COM7", 9600); // Change this to the name of your own com port - might need UI for this
+  //port = new Serial(this, "COM7", 115200); // Change this to the name of your own com port - might need UI for this
 }
 
 void draw()
@@ -91,7 +91,10 @@ void Update()
   float fakeVal1 = noise(millis() * 0.001) * 2.0 * 14.0 + 5.0;
   GraphPressure.SetValue(fakeVal1);
   float fakeVal2 = (sin(millis() * TWO_PI * 0.00033) + noise(millis() * 0.002) - 0.5) * 0.5;
-  GraphFlow.SetValue(fakeVal2 * 60.0);
+  if (port == null)
+  {
+    GraphFlow.SetValue(fakeVal2 * 60.0);
+  }
   GraphVolume.SetValue(max(0, fakeVal2 * 500.0));
 }
 
@@ -109,31 +112,38 @@ void UpdateSerial()
   }
 
   int size = MachineState.GetSerializedSize();
-  if (port.available() >= size)
+  while (port.available() >= size)
   {
+    println("available: " + port.available());
     byte[] bytes = port.readBytes(size);
 
     MachineState ms = MachineState.Deserialize(bytes);
 
-    println(ms.InhalationPressure);
-    println(ms.InhalationFlow);
-    println(ms.ExhalationPressure);
-    println(ms.ExhalationFlow);
-    println(ms.O2ValveAngle);
-    println(ms.AirValveAngle);
-    println(ms.TotalFlowLitersPerMin);
-    println(ms.MinuteVentilationLitersPerMin);
-    println(ms.RespiratoryFrequencyBreathsPerMin);
-    println(ms.InhalationTidalVolume);
-    println(ms.ExhalationTidalVolume);
-    println(ms.PressurePeak);
-    println(ms.PressurePlateau);
-    println(ms.PressurePeep);
-    println(ms.IERatio);
-    println(ms.LastReceiveValid != 0);
-    println(ms.SerializedHash);
-    println(ms.ComputedHash);
-    println(ms.IsValid());
+    // println(ms.InhalationPressure);
+    // println(ms.InhalationFlow);
+    // println(ms.ExhalationPressure);
+    // println(ms.ExhalationFlow);
+    // println(ms.O2ValveAngle);
+    // println(ms.AirValveAngle);
+    // println(ms.TotalFlowLitersPerMin);
+    // println(ms.MinuteVentilationLitersPerMin);
+    // println(ms.RespiratoryFrequencyBreathsPerMin);
+    // println(ms.InhalationTidalVolume);
+    // println(ms.ExhalationTidalVolume);
+    // println(ms.PressurePeak);
+    // println(ms.PressurePlateau);
+    // println(ms.PressurePeep);
+    // println(ms.IERatio);
+    println("bytes: " + bytes.length);
+    println("MCU last received valid: " + ms.LastReceiveValid);
+    // println(ms.SerializedHash);
+    // println(ms.ComputedHash);
+    println("Is valid: " + ms.IsValid());
+
+    if (ms.IsValid())
+    {
+      GraphFlow.SetValue(ms.TotalFlowLitersPerMin);
+    }
   }
 
   long nowMs = millis();

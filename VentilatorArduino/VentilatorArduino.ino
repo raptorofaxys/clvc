@@ -68,6 +68,11 @@ float Clamp01(float v)
     return min(max(v, 0.0f), 1.0f);
 }
 
+float Clamp(float v, float minValue, float maxValue)
+{
+    return min(max(v, minValue), maxValue);
+}
+
 /////////////////////////////
 // Printing and formatting
 /////////////////////////////
@@ -716,9 +721,9 @@ public:
 		_servo.attach(pin, 500, 2350);
 	}
 
-	void SetPmsition(float pmsition01)
+	void SetPosition(float Position01)
 	{
-		int angle = int(0 + (pmsition01) * 180);
+		int angle = int(0 + (Position01) * 180);
 		_servo.write(angle);
 	}
 
@@ -892,31 +897,14 @@ void setup()
 
 void loop()
 {
+    // Give the UI time to boot up - @TODO: message resynchronization
+    // for (int i = 0; i < 5; ++i)
+    // {
+    //     Blink(100);
+    // }
+
     float lpf = 0.0f;
     long lastMs = 0;
-    for (;;)
-    {
-        long nowMs = millis();
-        float seconds = nowMs / 1000.0f;
-        float position = sin(seconds * 0.8f) * 0.85f + 0.5f;
-        position = Clamp01(position);
-
-        lpf = LowPassFilter(lpf, position, 0.1f, (nowMs - lastMs) / 1000.0f);
-
-        lastMs = nowMs;
-
-        PrintStringFloat("position", position);
-        DEFAULT_PRINT->print("   ");
-        PrintStringFloat("lpf", lpf);
-        Ln();
-    }
-
-    // Give the UI time to boot up - @TODO: message resynchronization
-    for (int i = 0; i < 5; ++i)
-    {
-        Blink(100);
-    }
-
     bool lastReceiveValid = false;
     for (;;)
     {
@@ -929,6 +917,15 @@ void loop()
             // PrintStringInt("valid", valid ? 1 : 0); Ln();
         }
 
+        long nowMs = millis();
+        float seconds = nowMs / 1000.0f;
+        float rawSine = sin(seconds * 2.0f) * 4.0f;
+        rawSine = Clamp(rawSine, -1.0f, 1.0f) * 50.0f;
+
+        lpf = LowPassFilter(lpf, rawSine, 0.05f, (nowMs - lastMs) / 1000.0f);
+
+        lastMs = nowMs;
+
         MachineState ms;
         ms.InhalationPressure = 1.0f;
         ms.InhalationFlow = 2.0f;
@@ -936,7 +933,7 @@ void loop()
         ms.ExhalationFlow = 4.0f;
         ms.O2ValveAngle = 5.0f;
         ms.AirValveAngle = 6.0f;
-        ms.TotalFlowLitersPerMin = 7.0f;
+        ms.TotalFlowLitersPerMin = lpf;
         ms.MinuteVentilationLitersPerMin = 8.0f;
         ms.RespiratoryFrequencyBreathsPerMin = 9.0f;
         ms.InhalationTidalVolume = 10.0f;
@@ -948,9 +945,9 @@ void loop()
         ms.LastReceiveValid = lastReceiveValid;
 
         SendState(ms);
-        Serial.flush();
+        // Serial.flush();
 
-        Blink(400);
+        Blink(5);
     }
 
 #if ENABLE_INHALATION_PRESSURE_SENSOR
@@ -1050,13 +1047,13 @@ void loop()
 #endif
 
 #if ENABLE_O2_VALVE_SERVO
-        float o2Pmsition = Clamp01(inhalationFlow / 16.0f);
-        o2Valve.SetPmsition(o2Pmsition);
+        float o2Position = Clamp01(inhalationFlow / 16.0f);
+        o2Valve.SetPosition(o2Position);
 #endif
 
 #if ENABLE_AIR_VALVE_SERVO
-        float airPmsition = Clamp01(exhalationFlow / 16.0f);
-        airValve.SetPmsition(airPmsition);
+        float airPosition = Clamp01(exhalationFlow / 16.0f);
+        airValve.SetPosition(airPosition);
 #endif
     }
 }
