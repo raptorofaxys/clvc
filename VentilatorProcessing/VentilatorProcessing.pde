@@ -2,7 +2,7 @@ import processing.serial.*;
 
 boolean appFullScreen = false;
 boolean appTouchScreen = false;
-boolean appSmooth = false;
+boolean appSmooth = true;
 
 UIButton b1, b2, b3, b4;
 UIGraph GraphPressure, GraphFlow, GraphVolume;
