@@ -144,6 +144,14 @@ void UpdateSerial()
     {
       GraphFlow.SetValue(ms.TotalFlowLitersPerMin);
     }
+    else
+    {
+      // Flush the port and try to wait for the next packet
+      while (port.available() > 0)
+      {
+        port.read();
+      }
+    }
   }
 
   long nowMs = millis();
