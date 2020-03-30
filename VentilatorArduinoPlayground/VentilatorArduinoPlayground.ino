@@ -1,5 +1,3 @@
-// COVent-19 control firmware
-
 // Inputs:
 // -Inhalation pressure sensor: analog input A0
 // -Exhalation pressure sensor: analog input A1
@@ -1336,14 +1334,14 @@ void loop()
     {
 
 #if ENABLE_INHALATION_PRESSURE_SENSOR
-        float inhalationPressure = inhalationPressureSensor.GetPressurePsi();
+        float inhalationPressure = inhalationPressureSensor.GetPressureCmH2O();
         PrintStringFloat(F("Inh P"), inhalationPressure);
-        DEFAULT_PRINT->print(F(" PSI  "));
+        DEFAULT_PRINT->print(F(" cmH2o  "));
 #endif
 #if ENABLE_EXHALATION_PRESSURE_SENSOR
-        float exhalationPressure = exhalationPressureSensor.GetPressurePsi();
+        float exhalationPressure = exhalationPressureSensor.GetPressureCmH2O();
         PrintStringFloat(F("Exh P"), exhalationPressure); 
-        DEFAULT_PRINT->print(F(" PSI  "));
+        DEFAULT_PRINT->print(F(" cmH2o  "));
 #endif
 
 #if ENABLE_INHALATION_FLOW_SENSOR

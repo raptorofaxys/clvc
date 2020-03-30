@@ -1,5 +1,3 @@
-// COVent-19 control firmware
-
 // Inputs:
 // -Inhalation pressure sensor: analog input A0
 // -Exhalation pressure sensor: analog input A1
