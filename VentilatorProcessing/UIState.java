@@ -6,10 +6,33 @@ import java.util.Arrays;
 
 class UIState extends SerializedState
 {
-    final static int kNumFloats = 2;
+    final static int kNumFloats = 9;
+    final static int kNumChars = 2;
+    final static int kNumBytes = 2;
 
-    public float P1 = 0.0f;
-    public float P2 = 0.0f;
+    float FiO2;                                     // 0-1 ratio: 1.0 is 100% O2
+    byte ControlMode;                               // 0: pressure control, 1: volume control
+
+    // If pressure control mode:
+    float PressureControlInspiratoryPressure;       // cmH2O
+
+    // If volume control mode:
+    float VolumeControlMaxPressure;                 // cmH2O
+    float VolumeControlTidalVolume;                 // ml
+
+    float Peep;                                     // cmH2O
+
+    float InspirationTime;                          // s
+
+    float InspirationFilterRate;                    // IIR filter rate - how much error remains after one second: 0.1 means 10% of error remains after one second
+    float ExpirationFilterRate;                     // IIR filter rate
+
+    byte TriggerMode;                               // 0: timer, 1: patient effort
+
+    char TimerTriggerBreathsPerMin;                 // breaths/min
+
+    char PatientEffortTriggerMinBreathsPerMin;      // breaths/min
+    float PatientEffortTriggerLitersPerMin;         // L/min
 
     public static int GetSerializedSize()
     {
@@ -18,7 +41,7 @@ class UIState extends SerializedState
 
     static int GetPayloadSize()
     {
-        return kNumFloats * 4;
+        return kNumFloats * 4 + kNumChars * 2 + kNumBytes * 1;
     }
 
     public byte[] Serialize()
@@ -29,8 +52,19 @@ class UIState extends SerializedState
 
         // byte[] payload = Arrays.copyOfRange(buf, 0, GetPayloadSize());
 
-        bb.putFloat(P1);
-        bb.putFloat(P2);
+        bb.putFloat(FiO2);
+        bb.put(ControlMode);
+        bb.putFloat(PressureControlInspiratoryPressure);
+        bb.putFloat(VolumeControlMaxPressure);
+        bb.putFloat(VolumeControlTidalVolume);
+        bb.putFloat(Peep);
+        bb.putFloat(InspirationTime);
+        bb.putFloat(InspirationFilterRate);
+        bb.putFloat(ExpirationFilterRate);
+        bb.put(TriggerMode);
+        bb.putChar(TimerTriggerBreathsPerMin);
+        bb.putChar(PatientEffortTriggerMinBreathsPerMin);
+        bb.putFloat(PatientEffortTriggerLitersPerMin);
 
         byte[] array = bb.array();
         int hash = VUtils.GetHash(array, 0, GetPayloadSize());

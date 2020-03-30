@@ -123,7 +123,16 @@ void UpdateSerial()
     println(ms.ExhalationFlow);
     println(ms.O2ValveAngle);
     println(ms.AirValveAngle);
-    println(ms.LastReceiveValid);
+    println(ms.TotalFlowLitersPerMin);
+    println(ms.MinuteVentilationLitersPerMin);
+    println(ms.RespiratoryFrequencyBreathsPerMin);
+    println(ms.InhalationTidalVolume);
+    println(ms.ExhalationTidalVolume);
+    println(ms.PressurePeak);
+    println(ms.PressurePlateau);
+    println(ms.PressurePeep);
+    println(ms.IERatio);
+    println(ms.LastReceiveValid != 0);
     println(ms.SerializedHash);
     println(ms.ComputedHash);
     println(ms.IsValid());
@@ -133,8 +142,6 @@ void UpdateSerial()
   if (nowMs - lastSendMs > 1000)
   {
     UIState us = new UIState();
-    us.P1 = 1.0f;
-    us.P2 = 2.0f;
     byte[] packet = us.Serialize();
 
     port.write(packet);
