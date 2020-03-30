@@ -2,20 +2,23 @@ class UIElement
 {
   Transform2D Transform;
   float FracW, FracH;
-
-  public UIElement()
-  {
-    Transform = new Transform2D();
-  }
+  private int _prevW, _prevH;
 
   public UIElement(int x, int y, int w, int h)
   {
     Transform = new Transform2D(x, y, w, h);
+    _prevW = -1;
+    _prevH = -1;
+  }
+
+  public UIElement()
+  {
+    this(0, 0, 0, 0);
   }
 
   public UIElement(float fracW, float fracH)
   {
-    Transform = new Transform2D();
+    this(0, 0, 0, 0);
     FracW = fracW;
     FracH = fracH;
   }
@@ -27,34 +30,7 @@ class UIElement
     FracH = fracH;
   }
 
-  public void Update() {}
-  public void Render() {}
-}
-
-// For elements that need a render target
-class UIElementRT extends UIElement
-{
-  protected PGraphics _renderTarget;
-  private int _prevW, _prevH;
-
-  public UIElementRT(float fracW, float fracH)
-  {
-    super(fracW, fracH);
-    _prevW = -1;
-    _prevH = -1;
-  }
-
-  private void SetupRenderTarget()
-  {
-    int w = max(2, Transform.GetW());
-    int h = max(2, Transform.GetH());
-    _renderTarget = createGraphics(w, h);
-    _renderTarget.beginDraw();
-    _renderTarget.background(0);
-    _renderTarget.endDraw();
-  }
-
-  // Returns true if changed
+  // Returns true if width or height changed
   private boolean RefreshPrevWH()
   {
     int w = Transform.GetW();
@@ -67,11 +43,38 @@ class UIElementRT extends UIElement
 
   public void Update()
   {
-    super.Update();
     if (RefreshPrevWH())
-    {
-      SetupRenderTarget();
-    }
+      OnResize();
+  }
+
+  protected void OnResize() {}
+  public void Render() {}
+}
+
+// For elements that need a render target
+class UIElementRT extends UIElement
+{
+  protected PGraphics _renderTarget;
+
+  public UIElementRT(float fracW, float fracH)
+  {
+    super(fracW, fracH);
+  }
+
+  private void SetupRenderTarget()
+  {
+    int w = max(2, Transform.GetW());
+    int h = max(2, Transform.GetH());
+    _renderTarget = createGraphics(w, h);
+    _renderTarget.beginDraw();
+    _renderTarget.background(0);
+    _renderTarget.endDraw();
+  }
+
+  protected void OnResize()
+  {
+    super.OnResize();
+    SetupRenderTarget();
   }
 
   protected void Draw() {}
@@ -111,11 +114,6 @@ class UIButton extends UIElement
 
 class UITrackBar extends UIElement
 {
-  public UITrackBar(int x, int y, int w, int h)
-  {
-    super(x, y, w, h);
-  }
-
   public UITrackBar(float fracW, float fracH)
   {
     super(fracW, fracH);
@@ -123,9 +121,9 @@ class UITrackBar extends UIElement
 
   public void Render()
   {
-    fill(50);
+    fill(30);
     stroke(0);
     strokeWeight(4);
-    rect(Transform.GetX(), Transform.GetY(), Transform.GetW(), Transform.GetH(), 12);
+    rect(Transform.GetX(), Transform.GetY(), Transform.GetW(), Transform.GetH());
   }
 }
