@@ -727,7 +727,7 @@ private:
 };
 
 /////////////////////////////
-// Initialization and control loop
+// Serialization and State
 /////////////////////////////
 
 struct __attribute__((packed)) UIState
@@ -851,6 +851,20 @@ bool ReceiveState(T& state)
     return computedHash == serializedHash;
 }
 
+/////////////////////////////
+// DSP
+/////////////////////////////
+
+float LowPassFilter(float current, float target, float ratePerSecond, float deltaSeconds)
+{
+    float t = powf(ratePerSecond, deltaSeconds);
+    return target + (current - target) * t;
+}
+
+/////////////////////////////
+// Initialization and control loop
+/////////////////////////////
+
 SoftwareWire SWire(PIN_SOFTWARE_I2C_SDA, PIN_SOFTWARE_I2C_SCL);
 
 void setup()
@@ -878,6 +892,25 @@ void setup()
 
 void loop()
 {
+    float lpf = 0.0f;
+    long lastMs = 0;
+    for (;;)
+    {
+        long nowMs = millis();
+        float seconds = nowMs / 1000.0f;
+        float position = sin(seconds * 0.8f) * 0.85f + 0.5f;
+        position = Clamp01(position);
+
+        lpf = LowPassFilter(lpf, position, 0.1f, (nowMs - lastMs) / 1000.0f);
+
+        lastMs = nowMs;
+
+        PrintStringFloat("position", position);
+        DEFAULT_PRINT->print("   ");
+        PrintStringFloat("lpf", lpf);
+        Ln();
+    }
+
     // Give the UI time to boot up - @TODO: message resynchronization
     for (int i = 0; i < 5; ++i)
     {
