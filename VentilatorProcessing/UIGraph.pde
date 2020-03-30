@@ -32,8 +32,10 @@ class UIGraph extends UIElementRT
 
   private void NextSample()
   {
+    float currentValue = _samples[_sampleIndex];
     _sampleIndex += 1;
     _sampleIndex = _sampleIndex >= _sampleCount ? 0 : _sampleIndex;
+    _samples[_sampleIndex] = currentValue;
   }
 
   private float GetPrevSample()
