@@ -7,6 +7,8 @@ import java.util.Arrays;
 class MachineState extends SerializedState
 {
     final static int kNumFloats = 18;
+    final static int kNumInts = 1;
+    final static int kNumChars = 0;
     final static int kNumBytes = 1;
 
     float InhalationPressure;                       // cmH2O
@@ -37,6 +39,7 @@ class MachineState extends SerializedState
     float MachineStateMessagesPerSecond;            // count/s
 
     byte LastReceiveValid;
+    int ErrorMask;
 
     public boolean IsValid()
     {
@@ -52,7 +55,10 @@ class MachineState extends SerializedState
 
     static int GetPayloadSize()
     {
-        return kNumFloats * 4 + kNumBytes * 1;
+        return kNumFloats * 4
+        + kNumInts * 4
+        + kNumChars * 2
+        + kNumBytes * 1;
     }
 
     public static MachineState Deserialize(byte[] buf)
@@ -93,6 +99,7 @@ class MachineState extends SerializedState
         os.MachineStateMessagesPerSecond = bb.getFloat();
 
         os.LastReceiveValid = bb.get();
+        os.ErrorMask = bb.getInt();
 
         int serializedHash = bb.getInt();
 

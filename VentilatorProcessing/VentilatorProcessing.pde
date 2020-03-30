@@ -139,6 +139,8 @@ void UpdateSerial()
     println("Send/s: " + ms.MachineStateMessagesPerSecond);
     // println("bytes: " + bytes.length);
     println("MCU last received valid: " + ms.LastReceiveValid);
+    println("ms.TotalFlowLitersPerMin: " + ms.TotalFlowLitersPerMin);
+    println("MCU error mask: " + Integer.toHexString(ms.ErrorMask));
     // println(ms.SerializedHash);
     // println(ms.ComputedHash);
     println("Is valid: " + ms.IsValid());
@@ -161,8 +163,11 @@ void UpdateSerial()
   if (nowMs - lastSendMs > 33)
   {
     UIState us = new UIState();
-    byte[] packet = us.Serialize();
 
+    us.TriggerMode = 1;
+    us.TimerTriggerBreathsPerMin = 15;
+
+    byte[] packet = us.Serialize();
     port.write(packet);
 
     lastSendMs = nowMs;

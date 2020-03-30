@@ -7,11 +7,12 @@ import java.util.Arrays;
 class UIState extends SerializedState
 {
     final static int kNumFloats = 9;
+    final static int kNumInts = 0;
     final static int kNumChars = 2;
     final static int kNumBytes = 2;
 
     float FiO2;                                     // 0-1 ratio: 1.0 is 100% O2
-    byte ControlMode;                               // 0: pressure control, 1: volume control
+    byte ControlMode;                               // 0: no trigger, 1: pressure control, 2: volume control
 
     // If pressure control mode:
     float PressureControlInspiratoryPressure;       // cmH2O
@@ -27,7 +28,7 @@ class UIState extends SerializedState
     float InspirationFilterRate;                    // IIR filter rate - how much error remains after one second: 0.1 means 10% of error remains after one second
     float ExpirationFilterRate;                     // IIR filter rate
 
-    byte TriggerMode;                               // 0: timer, 1: patient effort
+    byte TriggerMode;                               // 0: no trigger, 1: timer, 2: patient effort
 
     char TimerTriggerBreathsPerMin;                 // breaths/min
 
@@ -41,7 +42,10 @@ class UIState extends SerializedState
 
     static int GetPayloadSize()
     {
-        return kNumFloats * 4 + kNumChars * 2 + kNumBytes * 1;
+        return kNumFloats * 4
+        + kNumInts * 4
+        + kNumChars * 2
+        + kNumBytes * 1;
     }
 
     public byte[] Serialize()

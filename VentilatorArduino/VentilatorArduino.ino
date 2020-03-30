@@ -72,6 +72,12 @@ void Halt(int line, const T* msg)
 
 #define ARRAY_COUNT(x) (static_cast<int>(sizeof(x) / sizeof(x[0])))
 
+template <class T>
+void Zero(T& t)
+{
+    memset(&t, 0, sizeof(t));
+}
+
 float Clamp01(float v)
 {
     return min(max(v, 0.0f), 1.0f);
@@ -85,6 +91,27 @@ float Clamp(float v, float minValue, float maxValue)
 float Lerp(float a, float b, float t)
 {
     return a + (b - a) * t;
+}
+
+/////////////////////////////
+// Error tracking
+/////////////////////////////
+
+namespace Error
+{
+    enum Type
+    {
+        None = 0,
+        InvalidUIInput = 1,
+        UnimplementedFeature = 2,
+    };
+}
+
+long gErrorMask;
+
+void RaiseError(int error) // @LAME: becaus Arduino pre-processing is a little broken for forward declarations we can't receive in Error:Type as an argument here
+{
+    gErrorMask |= (1 << error);
 }
 
 /////////////////////////////
@@ -834,10 +861,11 @@ private:
 // Serialization and state
 /////////////////////////////
 
+// This structure is designed to be zeroable in memory. The zero state should result in null operation (e.g. both valves closed, no triggering.)
 struct __attribute__((packed)) UIState
 {
     float FiO2;                                     // 0-1 ratio: 1.0 is 100% O2
-    uint8_t ControlMode;                            // 0: pressure control, 1: volume control
+    uint8_t ControlMode;                            // 0: no control, 1: pressure control, 2: volume control
 
     // If pressure control mode:
     float PressureControlInspiratoryPressure;       // cmH2O
@@ -853,7 +881,7 @@ struct __attribute__((packed)) UIState
     float InspirationFilterRate;                    // IIR filter rate - how much error remains after one second: 0.1 means 10% of error remains after one second
     float ExpirationFilterRate;                     // IIR filter rate
 
-    uint8_t TriggerMode;                            // 0: timer, 1: patient effort
+    uint8_t TriggerMode;                            // 0: no trigger, 1: timer, 2: patient effort (see TriggerMode enum)
 
     int TimerTriggerBreathsPerMin;                  // breaths/min
 
@@ -891,6 +919,7 @@ struct __attribute__((packed)) MachineState
     float MachineStateMessagesPerSecond;            // count/s
 
     int8_t LastReceiveValid = false;
+    uint32_t ErrorMask;
 };
 
 template <class T>
@@ -961,17 +990,21 @@ bool ReceiveState(T& state)
 
 bool gLastReceiveValid;
 
-void ReceiveUIState()
+void ReceiveUIState(struct UIState& currentUIState)
 {
     if (Serial.available() >= GetSerializedSize<UIState>())
     {
         UIState us;
         gLastReceiveValid = ReceiveState(us);
-        
-        gReceiveRawUIStateRate.AddEventCount(1);
-        gReceiveValidUIStateRate.AddEventCount(gLastReceiveValid ? 1 : 0);
 
-        if (!gLastReceiveValid)
+        gReceiveRawUIStateRate.AddEventCount(1);
+
+        if (gLastReceiveValid)
+        {
+            gReceiveValidUIStateRate.AddEventCount(1);
+            currentUIState = us;
+        }
+        else
         {
             // Flush the incoming pipeline in an attempt to resynchronize
             while (Serial.available())
@@ -982,30 +1015,14 @@ void ReceiveUIState()
     }
 }
 
-void SendMachineState()
+void SendMachineState(struct MachineState& ms)
 {
-    MachineState ms;
-    ms.InhalationPressure = 1.0f;
-    ms.InhalationFlow = 2.0f;
-    ms.ExhalationPressure = 3.0f;
-    ms.ExhalationFlow = 4.0f;
-    ms.O2ValveAngle = 5.0f;
-    ms.AirValveAngle = 6.0f;
-    ms.TotalFlowLitersPerMin = 7.0f;
-    ms.MinuteVentilationLitersPerMin = 8.0f;
-    ms.RespiratoryFrequencyBreathsPerMin = 9.0f;
-    ms.InhalationTidalVolume = 10.0f;
-    ms.ExhalationTidalVolume = 11.0f;
-    ms.PressurePeak = 12.0f;
-    ms.PressurePlateau = 13.0f;
-    ms.PressurePeep = 14.0f;
-    ms.IERatio = 15.0f;
-
     ms.RawUIMessagesPerSecond = gReceiveRawUIStateRate.GetRate();
     ms.ValidUIMessagesPerSecond = gReceiveValidUIStateRate.GetRate();
     ms.MachineStateMessagesPerSecond = gSendMachineStateRate.GetRate();
 
     ms.LastReceiveValid = gLastReceiveValid;
+    ms.ErrorMask = gErrorMask;
 
     SendState(ms);
     
@@ -1025,6 +1042,85 @@ float LowPassFilter(float current, float target, float ratePerSecond, float delt
 /////////////////////////////
 // Initialization and control loop
 /////////////////////////////
+
+namespace TriggerMode
+{
+    enum Type
+    {
+        Off = 0,
+        Timed = 1,
+        PatientEffort = 2
+    };
+}
+
+namespace BreathPhase
+{
+    enum Type
+    {
+        Inhalation,
+        Exhalation,
+        Rest
+    };
+}
+
+class TriggerLogic
+{
+public:
+    void ConfigureFromUIState(const UIState& uiState)
+    {
+        _uiState = uiState;
+    }
+
+    void Update()
+    {
+        _justTriggered = false;
+        
+        long nowMs = millis();
+
+        switch (_uiState.TriggerMode)
+        {
+            case TriggerMode::Off:
+                // Nothing to do
+                break;
+
+            case TriggerMode::Timed:
+                {
+                    if (_uiState.TimerTriggerBreathsPerMin <= 0)
+                    {
+                        RaiseError(Error::InvalidUIInput);
+                    }
+                    _uiState.TimerTriggerBreathsPerMin = max(_uiState.TimerTriggerBreathsPerMin, 1);
+                    
+                    float desiredMs = 60000.0f / _uiState.TimerTriggerBreathsPerMin;
+                    if (nowMs - _lastTriggerMs > desiredMs)
+                    {
+                        _justTriggered = true;
+                        _lastTriggerMs = nowMs;
+                    }
+                }
+                break;
+
+            case TriggerMode::PatientEffort:
+                RaiseError(Error::UnimplementedFeature);
+                break;
+
+            default:
+                RaiseError(Error::InvalidUIInput);
+                break;
+        }
+    }
+
+    bool JustTriggered()
+    {
+        return _justTriggered;
+    }
+
+private:
+    UIState _uiState;
+
+    long _lastTriggerMs = 0;
+    bool _justTriggered = false;
+};
 
 #if !VIRTUAL_INPUTS
 SoftwareWire SWire(PIN_SOFTWARE_I2C_SDA, PIN_SOFTWARE_I2C_SCL);
@@ -1114,29 +1210,61 @@ void loop()
     long lastNoiseTimeMs = 0;
 #endif
 
-    float lpf = 0.0f;
+    // float lpf = 0.0f;
     long lastUpdateMs = 0;
     long lastSendMs = 0;
+
+    UIState uiState;
+    Zero(uiState);
+    MachineState machineState;
+    Zero(machineState);
+
+    TriggerLogic triggerLogic;
     for (;;)
     {
+        long nowMs = millis();
+        float deltaSeconds = (nowMs - lastUpdateMs) / 1000.0f;
+        lastUpdateMs = nowMs;
+
         gReceiveRawUIStateRate.Update();
         gReceiveValidUIStateRate.Update();
         gSendMachineStateRate.Update();
 
-        ReceiveUIState();
+        ReceiveUIState(uiState);
 
-        long nowMs = millis();
-        float seconds = nowMs / 1000.0f;
-        float rawSine = sin(seconds * 2.0f) * 4.0f;
-        rawSine = Clamp(rawSine, -1.0f, 1.0f) * 50.0f;
+        triggerLogic.ConfigureFromUIState(uiState);
+        triggerLogic.Update();
 
-        lpf = LowPassFilter(lpf, rawSine, 0.05f, (nowMs - lastUpdateMs) / 1000.0f);
+        if (triggerLogic.JustTriggered())
+        {
+            machineState.TotalFlowLitersPerMin = 40.0f;
+        }
+        
+        machineState.TotalFlowLitersPerMin = LowPassFilter(machineState.TotalFlowLitersPerMin, 0.0f, 0.1f, deltaSeconds);
 
-        lastUpdateMs = nowMs;
+        // float secondsSinceStart = nowMs / 1000.0f;
+        // float rawSine = sin(secondsSinceStart * 2.0f) * 4.0f;
+        // rawSine = Clamp(rawSine, -1.0f, 1.0f) * 50.0f;
+        // lpf = LowPassFilter(lpf, rawSine, 0.05f, );
 
         if (nowMs - lastSendMs > kMachineStateSendIntervalMs)
         {
-            SendMachineState();
+            machineState.InhalationPressure = 1.0f;
+            machineState.InhalationFlow = 2.0f;
+            machineState.ExhalationPressure = 3.0f;
+            machineState.ExhalationFlow = 4.0f;
+            machineState.O2ValveAngle = 5.0f;
+            machineState.AirValveAngle = 6.0f;
+            machineState.MinuteVentilationLitersPerMin = 8.0f;
+            machineState.RespiratoryFrequencyBreathsPerMin = 9.0f;
+            machineState.InhalationTidalVolume = 10.0f;
+            machineState.ExhalationTidalVolume = 11.0f;
+            machineState.PressurePeak = 12.0f;
+            machineState.PressurePlateau = 13.0f;
+            machineState.PressurePeep = 14.0f;
+            machineState.IERatio = 15.0f;
+
+            SendMachineState(machineState);
             
             // This will possibly skip some updates if our update loop is not running fast enough
             lastSendMs = nowMs;
