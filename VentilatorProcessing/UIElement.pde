@@ -121,9 +121,9 @@ class UITrackBar extends UIElement
 
   public void Render()
   {
-    fill(50);
+    fill(30);
     stroke(0);
     strokeWeight(4);
-    rect(Transform.GetX(), Transform.GetY(), Transform.GetW(), Transform.GetH(), 12);
+    rect(Transform.GetX(), Transform.GetY(), Transform.GetW(), Transform.GetH());
   }
 }
