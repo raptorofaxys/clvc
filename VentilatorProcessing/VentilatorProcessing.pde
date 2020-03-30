@@ -114,7 +114,7 @@ void UpdateSerial()
   int size = MachineState.GetSerializedSize();
   while (port.available() >= size)
   {
-    println("available: " + port.available());
+    // println("available: " + port.available());
     byte[] bytes = port.readBytes(size);
 
     MachineState ms = MachineState.Deserialize(bytes);
@@ -134,7 +134,10 @@ void UpdateSerial()
     // println(ms.PressurePlateau);
     // println(ms.PressurePeep);
     // println(ms.IERatio);
-    println("bytes: " + bytes.length);
+    println("Raws UI recv/s: " + ms.RawUIMessagesPerSecond);
+    println("Valid UI recv/s: " + ms.ValidUIMessagesPerSecond);
+    println("Send/s: " + ms.MachineStateMessagesPerSecond);
+    // println("bytes: " + bytes.length);
     println("MCU last received valid: " + ms.LastReceiveValid);
     // println(ms.SerializedHash);
     // println(ms.ComputedHash);
@@ -155,7 +158,7 @@ void UpdateSerial()
   }
 
   long nowMs = millis();
-  if (nowMs - lastSendMs > 1000)
+  if (nowMs - lastSendMs > 33)
   {
     UIState us = new UIState();
     byte[] packet = us.Serialize();

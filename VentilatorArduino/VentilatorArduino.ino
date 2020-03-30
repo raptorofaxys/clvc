@@ -11,12 +11,19 @@
 // -proportional O2 valve: servo on D4
 // -proportional air valve: servo on D5
 
+#define VIRTUAL_INPUTS 1
+
+#if !VIRTUAL_INPUTS
 #include <Wire.h>
 #include <SoftwareWire.h>
+#else
+struct EmptyPlaceholderType {};
+#endif
+
 #include <Servo.h>
 
 /////////////////////////////
-// Hardware configuration
+// Global hardware and software configuration
 /////////////////////////////
 
 // Beware: some pins may not be able to assume all functions
@@ -30,6 +37,8 @@ const int PIN_ALARM_SPEAKER = 10;
 
 const int PIN_O2_VALVE = 4;
 const int PIN_AIR_VALVE = 5;
+
+const int kMachineStateSendIntervalMs = 8; // around 120Hz
 
 /////////////////////////////
 // General utilities
@@ -72,6 +81,73 @@ float Clamp(float v, float minValue, float maxValue)
 {
     return min(max(v, minValue), maxValue);
 }
+
+float Lerp(float a, float b, float t)
+{
+    return a + (b - a) * t;
+}
+
+/////////////////////////////
+// Event tracking
+/////////////////////////////
+
+class EventFrequencyTracker
+{
+public:
+    EventFrequencyTracker(long windowTimeMs = 500, float rateFilterRate = 0.5f)
+        : _windowTimeMs(windowTimeMs)
+        , _rateFilterRate(rateFilterRate)
+    {
+    }
+
+    void AddEventCount(float count)
+    {
+        _currentEventCount += count;
+    }
+
+    void Update()
+    {
+        long nowMs = millis();
+        long msSinceLastWindowShift = nowMs - _lastWindowStartMs;
+        if (msSinceLastWindowShift >= _windowTimeMs)
+        {
+            float instantRate = _currentEventCount / msSinceLastWindowShift * 1000.0f;
+
+            if (_rate < 0.0f)
+            {
+                _rate = instantRate;
+            }
+            else
+            {
+                _rate = Lerp(_rate, instantRate, _rateFilterRate);
+            }
+
+            _currentEventCount = 0.0f;
+            _lastWindowStartMs = nowMs;
+        }
+    }
+
+    bool HasRate()
+    {
+        return _rate >= 0.0f;
+    }
+
+    float GetRate()
+    {
+        return _rate;
+    }
+
+private:
+    long _windowTimeMs;
+    float _currentEventCount = 0.0f;
+    long _lastWindowStartMs = 0;
+    float _rate = -1.0f;
+    float _rateFilterRate = 1.0f;
+};
+
+EventFrequencyTracker gReceiveRawUIStateRate;
+EventFrequencyTracker gReceiveValidUIStateRate;
+EventFrequencyTracker gSendMachineStateRate;
 
 /////////////////////////////
 // Printing and formatting
@@ -497,12 +573,23 @@ public:
 
     float GetPressurePsi()
     {
+#if !VIRTUAL_INPUTS
         int rawValue = analogRead(_pin);
         float v01 = rawValue / 1023.0f;
         return UnitSampleToPsi(v01);
+#else
+        return 0.0f;
+#endif
+    }
+
+    float GetPressureCmH2O()
+    {
+        return GetPressurePsi() * kPsiToCmH2O;
     }
 
 private:
+    const float kPsiToCmH2O = 70.307f;
+
     float UnitSampleToPsi(float v01)
     {
         const float kMinPsi = 0.0f;
@@ -525,6 +612,7 @@ public:
     FlowSensor(I2C& i2c)
         : _i2c(i2c)
     {
+#if !VIRTUAL_INPUTS
         EnsureDeviceIsResponsive();
 
         // Discard the first two bytes, which may or may not be the serial depending on how long it's been since boot
@@ -546,6 +634,9 @@ public:
         CommandDelay();
 
         _serial = (uint32_t(serialHigh) << 16) | serialLow;
+#else
+        _serial = 0x12345678;
+#endif
     }
 
     float GetFlowSlpm()
@@ -565,10 +656,12 @@ private:
 
     void EnsureDeviceIsResponsive()
     {
+#if !VIRTUAL_INPUTS
         _i2c.beginTransmission(kI2cAddress);
         uint8_t error =_i2c.endTransmission();
         assert(error == 0, F("No device found at requisite I2C address"));
         CommandDelay();
+#endif
     }
 
     void UpdateIfRequired()
@@ -576,8 +669,12 @@ private:
         long nowMs = millis();
         if (nowMs - _lastUpdateMs >= 1)
         {
+#if !VIRTUAL_INPUTS
             uint16_t rawValue = ReadTwoBytes();
             _flowRate = kMaxSlpm * ((float(rawValue) / 16384) - 0.1f) / 0.8f;
+#else
+            _flowRate = 0.0f;
+#endif
 
             _lastUpdateMs = nowMs;
         }
@@ -588,6 +685,7 @@ private:
         delay(10);
     }
 
+#if !VIRTUAL_INPUTS
     uint16_t ReadTwoBytes()
     {
         _i2c.requestFrom(kI2cAddress, 2);
@@ -603,6 +701,7 @@ private:
 
         return (uint16_t(buf[0]) << 8) | buf[1];
     }
+#endif
 
     I2C& _i2c;
 
@@ -732,7 +831,7 @@ private:
 };
 
 /////////////////////////////
-// Serialization and State
+// Serialization and state
 /////////////////////////////
 
 struct __attribute__((packed)) UIState
@@ -786,6 +885,10 @@ struct __attribute__((packed)) MachineState
     float PressurePeep;                             // cmH2O
 
     float IERatio;                                  // unitless
+
+    float RawUIMessagesPerSecond;                   // count/s
+    float ValidUIMessagesPerSecond;                 // count/s
+    float MachineStateMessagesPerSecond;            // count/s
 
     int8_t LastReceiveValid = false;
 };
@@ -856,8 +959,61 @@ bool ReceiveState(T& state)
     return computedHash == serializedHash;
 }
 
+bool gLastReceiveValid;
+
+void ReceiveUIState()
+{
+    if (Serial.available() >= GetSerializedSize<UIState>())
+    {
+        UIState us;
+        gLastReceiveValid = ReceiveState(us);
+        
+        gReceiveRawUIStateRate.AddEventCount(1);
+        gReceiveValidUIStateRate.AddEventCount(gLastReceiveValid ? 1 : 0);
+
+        if (!gLastReceiveValid)
+        {
+            // Flush the incoming pipeline in an attempt to resynchronize
+            while (Serial.available())
+            {
+                Serial.read();
+            }
+        }
+    }
+}
+
+void SendMachineState()
+{
+    MachineState ms;
+    ms.InhalationPressure = 1.0f;
+    ms.InhalationFlow = 2.0f;
+    ms.ExhalationPressure = 3.0f;
+    ms.ExhalationFlow = 4.0f;
+    ms.O2ValveAngle = 5.0f;
+    ms.AirValveAngle = 6.0f;
+    ms.TotalFlowLitersPerMin = 7.0f;
+    ms.MinuteVentilationLitersPerMin = 8.0f;
+    ms.RespiratoryFrequencyBreathsPerMin = 9.0f;
+    ms.InhalationTidalVolume = 10.0f;
+    ms.ExhalationTidalVolume = 11.0f;
+    ms.PressurePeak = 12.0f;
+    ms.PressurePlateau = 13.0f;
+    ms.PressurePeep = 14.0f;
+    ms.IERatio = 15.0f;
+
+    ms.RawUIMessagesPerSecond = gReceiveRawUIStateRate.GetRate();
+    ms.ValidUIMessagesPerSecond = gReceiveValidUIStateRate.GetRate();
+    ms.MachineStateMessagesPerSecond = gSendMachineStateRate.GetRate();
+
+    ms.LastReceiveValid = gLastReceiveValid;
+
+    SendState(ms);
+    
+    gSendMachineStateRate.AddEventCount(1);
+}
+
 /////////////////////////////
-// DSP
+// Signal processing
 /////////////////////////////
 
 float LowPassFilter(float current, float target, float ratePerSecond, float deltaSeconds)
@@ -870,16 +1026,23 @@ float LowPassFilter(float current, float target, float ratePerSecond, float delt
 // Initialization and control loop
 /////////////////////////////
 
+#if !VIRTUAL_INPUTS
 SoftwareWire SWire(PIN_SOFTWARE_I2C_SDA, PIN_SOFTWARE_I2C_SCL);
+#else
+EmptyPlaceholderType Wire;
+EmptyPlaceholderType SWire;
+#endif
 
 void setup()
 {
     pinMode(13, OUTPUT);
 
+#if !VIRTUAL_INPUTS
     Wire.begin();
     Wire.setClock(100000);
     SWire.begin();
     SWire.setClock(100000);
+#endif
 
     Serial.begin(115200);
     while (!Serial);
@@ -902,53 +1065,6 @@ void loop()
     // {
     //     Blink(100);
     // }
-
-    float lpf = 0.0f;
-    long lastMs = 0;
-    bool lastReceiveValid = false;
-    for (;;)
-    {
-        if (Serial.available() >= GetSerializedSize<UIState>())
-        {
-            UIState us;
-            lastReceiveValid = ReceiveState(us);
-            // PrintStringFloat("P1", us.P1); Ln();
-            // PrintStringFloat("P2", us.P2); Ln();
-            // PrintStringInt("valid", valid ? 1 : 0); Ln();
-        }
-
-        long nowMs = millis();
-        float seconds = nowMs / 1000.0f;
-        float rawSine = sin(seconds * 2.0f) * 4.0f;
-        rawSine = Clamp(rawSine, -1.0f, 1.0f) * 50.0f;
-
-        lpf = LowPassFilter(lpf, rawSine, 0.05f, (nowMs - lastMs) / 1000.0f);
-
-        lastMs = nowMs;
-
-        MachineState ms;
-        ms.InhalationPressure = 1.0f;
-        ms.InhalationFlow = 2.0f;
-        ms.ExhalationPressure = 3.0f;
-        ms.ExhalationFlow = 4.0f;
-        ms.O2ValveAngle = 5.0f;
-        ms.AirValveAngle = 6.0f;
-        ms.TotalFlowLitersPerMin = lpf;
-        ms.MinuteVentilationLitersPerMin = 8.0f;
-        ms.RespiratoryFrequencyBreathsPerMin = 9.0f;
-        ms.InhalationTidalVolume = 10.0f;
-        ms.ExhalationTidalVolume = 11.0f;
-        ms.PressurePeak = 12.0f;
-        ms.PressurePlateau = 13.0f;
-        ms.PressurePeep = 14.0f;
-        ms.IERatio = 15.0f;
-        ms.LastReceiveValid = lastReceiveValid;
-
-        SendState(ms);
-        // Serial.flush();
-
-        Blink(5);
-    }
 
 #if ENABLE_INHALATION_PRESSURE_SENSOR
     DEFAULT_PRINT->print(F("Initializing inhalation pressure sensor...")); Ln();
@@ -997,6 +1113,35 @@ void loop()
 #if ENABLE_ALARM
     long lastNoiseTimeMs = 0;
 #endif
+
+    float lpf = 0.0f;
+    long lastUpdateMs = 0;
+    long lastSendMs = 0;
+    for (;;)
+    {
+        gReceiveRawUIStateRate.Update();
+        gReceiveValidUIStateRate.Update();
+        gSendMachineStateRate.Update();
+
+        ReceiveUIState();
+
+        long nowMs = millis();
+        float seconds = nowMs / 1000.0f;
+        float rawSine = sin(seconds * 2.0f) * 4.0f;
+        rawSine = Clamp(rawSine, -1.0f, 1.0f) * 50.0f;
+
+        lpf = LowPassFilter(lpf, rawSine, 0.05f, (nowMs - lastUpdateMs) / 1000.0f);
+
+        lastUpdateMs = nowMs;
+
+        if (nowMs - lastSendMs > kMachineStateSendIntervalMs)
+        {
+            SendMachineState();
+            
+            // This will possibly skip some updates if our update loop is not running fast enough
+            lastSendMs = nowMs;
+        }
+    }
 
     for (;;)
     {
