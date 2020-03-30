@@ -2,7 +2,7 @@ import processing.serial.*;
 
 boolean appFullScreen = false;
 boolean appTouchScreen = false;
-boolean appSmooth = false;
+boolean appSmooth = true;
 
 UIButton b1, b2, b3, b4;
 UIGraph GraphPressure, GraphFlow, GraphVolume;
@@ -19,7 +19,7 @@ void settings()
   if (appFullScreen)
     fullScreen(P2D);
   else
-    size(800, 600, P2D);
+    size(832, 520, P2D);
 
   if (appSmooth)
     smooth();
@@ -30,6 +30,7 @@ void settings()
 void setup()
 {
   surface.setResizable(true);
+  frameRate(60);
   background(0);
 
   if (appTouchScreen)
@@ -46,9 +47,9 @@ void setup()
   b2 = new UIButton(0.2, 1.0);
   b3 = new UIButton(0.2, 1.0);
   b4 = new UIButton(0.2, 1.0);
-  GraphPressure = new UIGraph(1.0, 1.0, 512, -1.0, 1.0, #ffbb00);
-  GraphFlow = new UIGraph(1.0, 1.0, 512, -2.0, 2.0, #00ff99);
-  GraphVolume = new UIGraph(1.0, 1.0, 512, -1.0, 3.0, #0099ff);
+  GraphPressure = new UIGraph(1.0, 1.0, 512, -1, 30, #ffbb00);
+  GraphFlow = new UIGraph(1.0, 1.0, 512, -100.0, 100.0, #00ff99);
+  GraphVolume = new UIGraph(1.0, 1.0, 512, -40.0, 800.0, #0099ff);
 
   GraphGroup = new UIVerticalFracGroup(0.8, 1.0, new UIElement[] {GraphPressure, GraphFlow, GraphVolume});
   DataGroup = new UIHorizontalFracGroup(1.0, 0.8, new UIElement[] {GraphGroup, InfoPanel});
@@ -68,8 +69,7 @@ void draw()
 
 void Update()
 {
-  //*
-  // For testing resizable window with the lack of a proper resize event
+  //* For testing resizable window with the lack of a proper resize event
   if (!appFullScreen)
   {
     RootGroup.Transform.SetWH(width, height);
@@ -79,6 +79,12 @@ void Update()
   RootGroup.Update();
 
   UpdateSerial();
+
+  float fakeVal1 = noise(millis() * 0.001) * 2.0 * 14.0 + 5.0;
+  GraphPressure.SetValue(fakeVal1);
+  float fakeVal2 = (sin(millis() * TWO_PI * 0.00033) + noise(millis() * 0.002) - 0.5) * 0.5;
+  GraphFlow.SetValue(fakeVal2 * 60.0);
+  GraphVolume.SetValue(max(0, fakeVal2 * 500.0));
 }
 
 void Render()

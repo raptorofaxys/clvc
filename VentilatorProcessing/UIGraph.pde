@@ -1,5 +1,7 @@
 class UIGraph extends UIElementRT
 {
+  private int FADE_SAMPLES_COUNT = 5;
+
   private int _sampleCount;
   private float[] _samples;
   private float _rangeMinY;
@@ -12,8 +14,6 @@ class UIGraph extends UIElementRT
   private int _currentY;
   private int _originY;
 
-  private int FADE_SAMPLES_COUNT = 5;
-
   public UIGraph(float fracW, float fracH, int sampleCount, float rangeMinY, float rangeMaxY, color colorLine)
   {
     super(fracW, fracH);
@@ -23,6 +23,11 @@ class UIGraph extends UIElementRT
     _rangeMaxY = rangeMaxY;
     _colorLine = colorLine;
     _colorDot = colorLine;
+  }
+
+  public void SetValue(float value)
+  {
+    _samples[_sampleIndex] = value;
   }
 
   private void NextSample()
@@ -59,8 +64,11 @@ class UIGraph extends UIElementRT
   public void Update()
   {
     super.Update();
+    // TODO: Make frame rate independent
+    // 0, 1 or more NextSample() calls based on elapsed time would fix
+    // should interpolate missing samples
+    // would require work to handle drawing
     NextSample();
-    _samples[_sampleIndex] = noise(second() + millis()) * 2.0 - 1.0;
   }
 
   protected void Draw()
@@ -104,7 +112,7 @@ class UIGraph extends UIElementRT
     int y = Transform.GetY();
     noFill();
     stroke(90);
-    strokeWeight(1);
+    strokeWeight(0.5);
     line(0, _originY + y, Transform.GetW(), _originY + y);
     fill(_colorDot);
     noStroke();
