@@ -216,7 +216,7 @@ class ProportionalValve
 public:
 	ProportionalValve(int pin)
 	{
-		_servo.attach(pin, 500, 2350);
+		_servo.attach(pin, 550, 2300);
 	}
 
 	void SetPosition(float position01)
