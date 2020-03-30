@@ -145,3 +145,32 @@ class UIVerticalFracGroup extends UIGroup
     super.UpdateChildrenLayout();
   }
 }
+
+class UIOverlappingGroup extends UIGroup
+{
+  public UIOverlappingGroup(int x, int y, int w, int h, UIElement[] children)
+  {
+    super(x, y, w, h, children);
+  }
+
+  public UIOverlappingGroup(float fracW, float fracH, UIElement[] children)
+  {
+    super(fracW, fracH, children);
+  }
+
+  public void UpdateChildrenLayout()
+  {
+    int x = Transform.GetX();
+    int y = Transform.GetY();
+    int w = Transform.GetW();
+    int h = Transform.GetH();
+
+    for (UIElement e : _children)
+    {
+      e.Transform.SetXY(x, y);
+      e.Transform.SetWH(w, h);
+    }
+
+    super.UpdateChildrenLayout();
+  }
+}

@@ -91,6 +91,73 @@ class UIElementRT extends UIElement
   }
 }
 
+class UIText extends UIElement
+{
+  private String _text;
+  private PFont _font;
+  private float _textSize;
+  private color _textColor;
+  private int _alignX, _alignY;
+
+  public UIText(float fracW, float fracH, String text, PFont font, float textSize, color textColor, int alignX, int alignY)
+  {
+    super(fracW, fracH);
+    _text = text;
+    _font = font;
+    _textSize = textSize;
+    _textColor = textColor;
+    _alignX = alignX;
+    _alignY = alignY;
+  }
+
+  public void SetText(String text)
+  {
+    _text = text;
+  }
+
+  public void Render()
+  {
+    int x = Transform.GetX();
+    int y = Transform.GetY();
+    int w = Transform.GetW();
+    int h = Transform.GetH();
+
+    /* Debug
+    stroke(#ffff00);
+    strokeWeight(0.5);
+    noFill();
+    rect(x, y, w, h);
+    //*/
+
+    switch (_alignX)
+    {
+      case CENTER:
+        x += w / 2;
+        break;
+      case RIGHT:
+        x += w;
+        break;
+    }
+    switch (_alignY)
+    {
+      case CENTER:
+        y += h / 2;
+        break;
+      case BOTTOM:
+      case BASELINE:
+        y += h;
+        break;
+    }
+
+    // TODO: size relative to resolution
+    // maybe snap to specific multiples of original fontSize?
+    textAlign(_alignX, _alignY);
+    fill(_textColor);
+    textFont(_font, _textSize);
+    text(_text, x, y);
+  }
+}
+
 class UIButton extends UIElement
 {
   public UIButton(int x, int y, int w, int h)

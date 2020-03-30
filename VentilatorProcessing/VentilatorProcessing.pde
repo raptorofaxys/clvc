@@ -41,19 +41,27 @@ void setup()
   fontText = loadFont("SegoeUI_Bold_64.vlw");
   fontNumbers = loadFont("SegoeUI_Semilight_64.vlw");
 
+  UIElement text1, text2, btg, og1;
+
   TrackBar = new UITrackBar(1.0, 1.0);
   InfoPanel = new UIElement(0.2, 1.0);
+
   b1 = new UIButton(0.2, 1.0);
+  text1 = new UIText(1.0, 40, "PEEP", fontText, 24, 100, CENTER, CENTER);
+  text2 = new UIText(1.0, 60, "12.6", fontNumbers, 64, 255, CENTER, TOP);
+  btg = new UIVerticalFracGroup(1.0, 1.0, new UIElement[] {text1, text2});
+  og1 = new UIOverlappingGroup(0.2, 1.0, new UIElement[] {b1, btg});
   b2 = new UIButton(0.2, 1.0);
   b3 = new UIButton(0.2, 1.0);
   b4 = new UIButton(0.2, 1.0);
+
   GraphPressure = new UIGraph(1.0, 1.0, 512, -1, 30, #ffbb00);
   GraphFlow = new UIGraph(1.0, 1.0, 512, -100.0, 100.0, #00ff99);
   GraphVolume = new UIGraph(1.0, 1.0, 512, -40.0, 800.0, #0099ff);
-
   GraphGroup = new UIVerticalFracGroup(0.8, 1.0, new UIElement[] {GraphPressure, GraphFlow, GraphVolume});
+
   DataGroup = new UIHorizontalFracGroup(1.0, 0.8, new UIElement[] {GraphGroup, InfoPanel});
-  SettingsGroup = new UIHorizontalFracGroup(1.0, 0.2, new UIElement[] {b1, b2, b3, b4});
+  SettingsGroup = new UIHorizontalFracGroup(1.0, 0.2, new UIElement[] {og1, b2, b3, b4});
   MainGroup = new UIVerticalFracGroup(0.9, 1.0, new UIElement[] {DataGroup, SettingsGroup});
   RightGroup = new UIVerticalFracGroup(0.1, 1.0, new UIElement[] {TrackBar});
   RootGroup = new UIHorizontalFracGroup(0, 0, width, height, new UIElement[] {MainGroup, RightGroup});
@@ -91,16 +99,6 @@ void Render()
 {
   background(0);
   RootGroup.Render();
-  // noStroke();
-  // fill(#ff0000);
-  //rect(0, height - 100, 180, 2);
-  textAlign(CENTER);
-  fill(100);
-  textFont(fontText, 24);
-  text("PEEP", 90, height - 90);
-  fill(255);
-  textFont(fontNumbers, 64);
-  text("12.6", 90, height - 28);
 }
 
 void UpdateSerial()
