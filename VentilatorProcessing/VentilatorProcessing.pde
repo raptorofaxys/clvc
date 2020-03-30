@@ -14,6 +14,8 @@ PFont fontText, fontNumbers;
 Serial port;
 long lastSendMs;
 
+UIState uiState = new UIState();
+
 void settings()
 {
   if (appFullScreen)
@@ -114,35 +116,16 @@ void UpdateSerial()
   int size = MachineState.GetSerializedSize();
   while (port.available() >= size)
   {
-    // println("available: " + port.available());
     byte[] bytes = port.readBytes(size);
 
     MachineState ms = MachineState.Deserialize(bytes);
 
-    // println(ms.InhalationPressure);
-    // println(ms.InhalationFlow);
-    // println(ms.ExhalationPressure);
-    // println(ms.ExhalationFlow);
-    // println(ms.O2ValveAngle);
-    // println(ms.AirValveAngle);
-    // println(ms.TotalFlowLitersPerMin);
-    // println(ms.MinuteVentilationLitersPerMin);
-    // println(ms.RespiratoryFrequencyBreathsPerMin);
-    // println(ms.InhalationTidalVolume);
-    // println(ms.ExhalationTidalVolume);
-    // println(ms.PressurePeak);
-    // println(ms.PressurePlateau);
-    // println(ms.PressurePeep);
-    // println(ms.IERatio);
     println("Raws UI recv/s: " + ms.RawUIMessagesPerSecond);
     println("Valid UI recv/s: " + ms.ValidUIMessagesPerSecond);
     println("Send/s: " + ms.MachineStateMessagesPerSecond);
-    // println("bytes: " + bytes.length);
     println("MCU last received valid: " + ms.LastReceiveValid);
     println("ms.TotalFlowLitersPerMin: " + ms.TotalFlowLitersPerMin);
     println("MCU error mask: " + Integer.toHexString(ms.ErrorMask));
-    // println(ms.SerializedHash);
-    // println(ms.ComputedHash);
     println("Is valid: " + ms.IsValid());
 
     if (ms.IsValid())
@@ -162,14 +145,22 @@ void UpdateSerial()
   long nowMs = millis();
   if (nowMs - lastSendMs > 33)
   {
-    UIState us = new UIState();
+    uiState.TriggerMode = 1;
+    uiState.TimerTriggerBreathsPerMin = 20;
 
-    us.TriggerMode = 1;
-    us.TimerTriggerBreathsPerMin = 15;
-
-    byte[] packet = us.Serialize();
+    byte[] packet = uiState.Serialize();
     port.write(packet);
 
+    uiState.ResetEvents();
+
     lastSendMs = nowMs;
+  }
+}
+
+void keyPressed()
+{
+  if (key == 'b')
+  {
+    uiState.TriggerBreath();
   }
 }

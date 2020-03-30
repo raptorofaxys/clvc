@@ -887,6 +887,8 @@ struct __attribute__((packed)) UIState
 
     int PatientEffortTriggerMinBreathsPerMin;       // breaths/min
     float PatientEffortTriggerLitersPerMin;         // L/min
+
+    uint8_t BreathManuallyTriggered;                // 1: yes, 0:no
 };
 
 struct __attribute__((packed)) MachineState
@@ -1094,8 +1096,7 @@ public:
                     float desiredMs = 60000.0f / _uiState.TimerTriggerBreathsPerMin;
                     if (nowMs - _lastTriggerMs > desiredMs)
                     {
-                        _justTriggered = true;
-                        _lastTriggerMs = nowMs;
+                        TriggerWhenPossible();
                     }
                 }
                 break;
@@ -1108,6 +1109,18 @@ public:
                 RaiseError(Error::InvalidUIInput);
                 break;
         }
+
+        if (_pendingTrigger && (nowMs - _lastTriggerMs >= kMinimumReTriggerMs))
+        {
+            _pendingTrigger = false;
+            _justTriggered = true;
+            _lastTriggerMs = nowMs;
+        }
+    }
+
+    void TriggerWhenPossible()
+    {
+        _pendingTrigger = true;
     }
 
     bool JustTriggered()
@@ -1116,11 +1129,24 @@ public:
     }
 
 private:
+    const long kMinimumReTriggerMs = 2000;
+    
     UIState _uiState;
+
+    bool _pendingTrigger;
 
     long _lastTriggerMs = 0;
     bool _justTriggered = false;
 };
+
+void ProcessUIStateEvents(struct UIState& uiState, class TriggerLogic& triggerLogic)
+{
+    if (uiState.BreathManuallyTriggered != 0)
+    {
+        triggerLogic.TriggerWhenPossible();
+        uiState.BreathManuallyTriggered = 0;
+    }
+}
 
 #if !VIRTUAL_INPUTS
 SoftwareWire SWire(PIN_SOFTWARE_I2C_SDA, PIN_SOFTWARE_I2C_SCL);
@@ -1232,6 +1258,8 @@ void loop()
 
         ReceiveUIState(uiState);
 
+        ProcessUIStateEvents(uiState, triggerLogic);
+        
         triggerLogic.ConfigureFromUIState(uiState);
         triggerLogic.Update();
 

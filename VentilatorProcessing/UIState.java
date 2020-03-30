@@ -9,7 +9,7 @@ class UIState extends SerializedState
     final static int kNumFloats = 9;
     final static int kNumInts = 0;
     final static int kNumChars = 2;
-    final static int kNumBytes = 2;
+    final static int kNumBytes = 3;
 
     float FiO2;                                     // 0-1 ratio: 1.0 is 100% O2
     byte ControlMode;                               // 0: no trigger, 1: pressure control, 2: volume control
@@ -34,6 +34,8 @@ class UIState extends SerializedState
 
     char PatientEffortTriggerMinBreathsPerMin;      // breaths/min
     float PatientEffortTriggerLitersPerMin;         // L/min
+
+    byte BreathManuallyTriggered;                   // 1: yes, 0:no
 
     public static int GetSerializedSize()
     {
@@ -69,6 +71,7 @@ class UIState extends SerializedState
         bb.putChar(TimerTriggerBreathsPerMin);
         bb.putChar(PatientEffortTriggerMinBreathsPerMin);
         bb.putFloat(PatientEffortTriggerLitersPerMin);
+        bb.put(BreathManuallyTriggered);
 
         byte[] array = bb.array();
         int hash = VUtils.GetHash(array, 0, GetPayloadSize());
@@ -77,4 +80,13 @@ class UIState extends SerializedState
         return array;
     }
 
+    public void TriggerBreath()
+    {
+        BreathManuallyTriggered = 1;
+    }
+
+    public void ResetEvents()
+    {
+        BreathManuallyTriggered = 0;
+    }
 }
