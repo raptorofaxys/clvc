@@ -12,6 +12,7 @@ class UIState extends SerializedState
     final static int kNumBytes = 3;
 
     float FiO2;                                     // 0-1 ratio: 1.0 is 100% O2
+    
     byte ControlMode;                               // 0: no trigger, 1: pressure control, 2: volume control
 
     // If pressure control mode:

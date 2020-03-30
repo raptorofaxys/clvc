@@ -114,6 +114,36 @@ void RaiseError(int error) // @LAME: becaus Arduino pre-processing is a little b
     gErrorMask |= (1 << error);
 }
 
+template<typename T>
+void ValidateUIState(T& t, int minT, int maxT)
+{
+    if (t < minT)
+    {
+        RaiseError(Error::InvalidUIInput);
+        t = minT;
+    }
+    if (t > maxT)
+    {
+        RaiseError(Error::InvalidUIInput);
+        t = maxT;
+    }
+}
+
+template<typename T>
+void ValidateUIState(T& t, float minT, float maxT)
+{
+    if (t < minT)
+    {
+        RaiseError(Error::InvalidUIInput);
+        t = minT;
+    }
+    if (t > maxT)
+    {
+        RaiseError(Error::InvalidUIInput);
+        t = maxT;
+    }
+}
+
 /////////////////////////////
 // Event tracking
 /////////////////////////////
@@ -865,6 +895,7 @@ private:
 struct __attribute__((packed)) UIState
 {
     float FiO2;                                     // 0-1 ratio: 1.0 is 100% O2
+    
     uint8_t ControlMode;                            // 0: no control, 1: pressure control, 2: volume control
 
     // If pressure control mode:
@@ -889,6 +920,35 @@ struct __attribute__((packed)) UIState
     float PatientEffortTriggerLitersPerMin;         // L/min
 
     uint8_t BreathManuallyTriggered;                // 1: yes, 0:no
+
+    void Validate()
+    {
+        const float kMaxPressure = 40.0f;
+        const int kMaxBreathsPerMinute = 30;
+
+        ValidateUIState(FiO2, 0.21f, 1.0f);
+        
+        ValidateUIState(ControlMode, 0, 2);
+        
+        ValidateUIState(PressureControlInspiratoryPressure, 0.0f, kMaxPressure);
+        
+        ValidateUIState(VolumeControlMaxPressure, 0.0f, kMaxPressure);
+        ValidateUIState(VolumeControlTidalVolume, 0.0f, 1.0f);
+        
+        ValidateUIState(Peep, 0.0f, kMaxPressure);
+        
+        ValidateUIState(InspirationTime, 0.5f, 3.0f);
+        
+        ValidateUIState(InspirationFilterRate, 0.0f, 0.5f);
+        ValidateUIState(ExpirationFilterRate, 0.0f, 0.5f);
+        
+        ValidateUIState(TriggerMode, 0, 2);
+        
+        ValidateUIState(TimerTriggerBreathsPerMin, 5, kMaxBreathsPerMinute);
+        
+        ValidateUIState(PatientEffortTriggerMinBreathsPerMin, 0, kMaxBreathsPerMinute);
+        ValidateUIState(PatientEffortTriggerLitersPerMin, 0.0f, 5.0f);
+    }
 };
 
 struct __attribute__((packed)) MachineState
@@ -1004,6 +1064,7 @@ void ReceiveUIState(struct UIState& currentUIState)
         if (gLastReceiveValid)
         {
             gReceiveValidUIStateRate.AddEventCount(1);
+            us.Validate();
             currentUIState = us;
         }
         else
@@ -1087,12 +1148,6 @@ public:
 
             case TriggerMode::Timed:
                 {
-                    if (_uiState.TimerTriggerBreathsPerMin <= 0)
-                    {
-                        RaiseError(Error::InvalidUIInput);
-                    }
-                    _uiState.TimerTriggerBreathsPerMin = max(_uiState.TimerTriggerBreathsPerMin, 1);
-                    
                     float desiredMs = 60000.0f / _uiState.TimerTriggerBreathsPerMin;
                     if (nowMs - _lastTriggerMs > desiredMs)
                     {
@@ -1113,6 +1168,7 @@ public:
         if (_pendingTrigger && (nowMs - _lastTriggerMs >= kMinimumReTriggerMs))
         {
             _pendingTrigger = false;
+
             _justTriggered = true;
             _lastTriggerMs = nowMs;
         }
@@ -1123,9 +1179,39 @@ public:
         _pendingTrigger = true;
     }
 
-    bool JustTriggered()
+    long GetInspiratoryTimeMs()
     {
-        return _justTriggered;
+        return static_cast<long>(_uiState.InspirationTime * 1000);
+    }
+
+    long GetExpiratoryTimeMs()
+    {
+        return GetInspiratoryTimeMs() * 2;
+    }
+
+    // After this amount of time, the patient is considered "at rest" and a breath could be manually retriggered
+    long GetCompleteBreathTimeMs()
+    {
+        return GetInspiratoryTimeMs() + GetExpiratoryTimeMs();
+    }
+
+    BreathPhase::Type GetBreathPhase()
+    {
+        long timeSinceTrigger = millis() - _lastTriggerMs;
+
+        if (timeSinceTrigger > GetCompleteBreathTimeMs())
+        {
+            return BreathPhase::Rest;
+        }
+        else if (timeSinceTrigger > GetInspiratoryTimeMs())
+        {
+            return BreathPhase::Exhalation;
+        }
+        else
+        {
+            return BreathPhase::Inhalation;
+        }
+        
     }
 
 private:
@@ -1133,7 +1219,7 @@ private:
     
     UIState _uiState;
 
-    bool _pendingTrigger;
+    bool _pendingTrigger = false;
 
     long _lastTriggerMs = 0;
     bool _justTriggered = false;
@@ -1263,9 +1349,11 @@ void loop()
         triggerLogic.ConfigureFromUIState(uiState);
         triggerLogic.Update();
 
-        if (triggerLogic.JustTriggered())
+        switch (triggerLogic.GetBreathPhase())
         {
-            machineState.TotalFlowLitersPerMin = 40.0f;
+            case BreathPhase::Inhalation: machineState.TotalFlowLitersPerMin = 40.0f; break;
+            case BreathPhase::Exhalation: machineState.TotalFlowLitersPerMin = 20.0f; break;
+            case BreathPhase::Rest: machineState.TotalFlowLitersPerMin = 0.0f; break;
         }
         
         machineState.TotalFlowLitersPerMin = LowPassFilter(machineState.TotalFlowLitersPerMin, 0.0f, 0.1f, deltaSeconds);
