@@ -879,7 +879,7 @@ public:
 
 	void SetPosition(float Position01)
 	{
-		int angle = int(0 + (Position01) * 180);
+		int angle = int(0 + (Position01) * 90);
 		_servo.write(angle);
 	}
 
@@ -1383,14 +1383,15 @@ void loop()
 
         float position = sin(secondsSinceStart * 0.3f) * 0.85f + 0.5f;
         position = Clamp01(position);
+        // PrintStringFloat("p", position); Ln();
 
 #if ENABLE_O2_VALVE_SERVO
-        float o2Position = Clamp01(position / 16.0f);
+        float o2Position = Clamp01(position);
         o2Valve.SetPosition(o2Position);
 #endif
 
 #if ENABLE_AIR_VALVE_SERVO
-        float airPosition = Clamp01(position / 16.0f);
+        float airPosition = Clamp01(position);
         airValve.SetPosition(airPosition);
 #endif
     }
