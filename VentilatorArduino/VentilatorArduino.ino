@@ -730,25 +730,57 @@ private:
 // Initialization and control loop
 /////////////////////////////
 
-struct UIState
+struct __attribute__((packed)) UIState
 {
-    float P1 = 0.0f;
-    float P2 = 0.0f;
+    float FiO2;                                     // 0-1 ratio: 1.0 is 100% O2
+    uint8_t ControlMode;                            // 0: pressure control, 1: volume control
+
+    // If pressure control mode:
+    float PressureControlInspiratoryPressure;       // cmH2O
+
+    // If volume control mode:
+    float VolumeControlMaxPressure;                 // cmH2O
+    float VolumeControlTidalVolume;                 // ml
+
+    float Peep;                                     // cmH2O
+
+    float InspirationTime;                          // s
+
+    float InspirationFilterRate;                    // IIR filter rate - how much error remains after one second: 0.1 means 10% of error remains after one second
+    float ExpirationFilterRate;                     // IIR filter rate
+
+    uint8_t TriggerMode;                            // 0: timer, 1: patient effort
+
+    int TimerTriggerBreathsPerMin;                  // breaths/min
+
+    int PatientEffortTriggerMinBreathsPerMin;       // breaths/min
+    float PatientEffortTriggerLitersPerMin;         // L/min
 };
 
 struct __attribute__((packed)) MachineState
 {
-    // int LowO2ServoEndpoint;
-    // int HighO2ServoEndpoint;
+    float InhalationPressure;                       // cmH2O
+    float InhalationFlow;                           // L/min
 
-    float InhalationPressure = 0.0f;
-    float InhalationFlow = 0.0f;
+    float ExhalationPressure;                       // cmH2O
+    float ExhalationFlow;                           // L/min
 
-    float ExhalationPressure = 0.0f;
-    float ExhalationFlow = 0.0f;
+    float O2ValveAngle;                             // degrees
+    float AirValveAngle;                            // degrees
 
-    float O2ValveAngle = 0.0f;
-    float AirValveAngle = 0.0f;
+    float TotalFlowLitersPerMin;                    // L/min
+
+    float MinuteVentilationLitersPerMin;            // L/min
+    float RespiratoryFrequencyBreathsPerMin;        // breaths/min
+
+    float InhalationTidalVolume;                    // ml
+    float ExhalationTidalVolume;                    // ml
+
+    float PressurePeak;                             // cmH2O
+    float PressurePlateau;                          // cmH2O
+    float PressurePeep;                             // cmH2O
+
+    float IERatio;                                  // unitless
 
     int8_t LastReceiveValid = false;
 };
@@ -830,7 +862,7 @@ void setup()
     SWire.begin();
     SWire.setClock(100000);
 
-    Serial.begin(9600);
+    Serial.begin(115200);
     while (!Serial);
 }
 
@@ -846,9 +878,11 @@ void setup()
 
 void loop()
 {
-    Blink(100);
-    Blink(100);
-    Blink(100);
+    // Give the UI time to boot up - @TODO: message resynchronization
+    for (int i = 0; i < 5; ++i)
+    {
+        Blink(100);
+    }
 
     bool lastReceiveValid = false;
     for (;;)
@@ -869,6 +903,15 @@ void loop()
         ms.ExhalationFlow = 4.0f;
         ms.O2ValveAngle = 5.0f;
         ms.AirValveAngle = 6.0f;
+        ms.TotalFlowLitersPerMin = 7.0f;
+        ms.MinuteVentilationLitersPerMin = 8.0f;
+        ms.RespiratoryFrequencyBreathsPerMin = 9.0f;
+        ms.InhalationTidalVolume = 10.0f;
+        ms.ExhalationTidalVolume = 11.0f;
+        ms.PressurePeak = 12.0f;
+        ms.PressurePlateau = 13.0f;
+        ms.PressurePeep = 14.0f;
+        ms.IERatio = 15.0f;
         ms.LastReceiveValid = lastReceiveValid;
 
         SendState(ms);

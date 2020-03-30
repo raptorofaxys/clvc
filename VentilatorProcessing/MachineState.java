@@ -6,22 +6,33 @@ import java.util.Arrays;
 
 class MachineState extends SerializedState
 {
-    final static int kNumFloats = 6;
+    final static int kNumFloats = 15;
     final static int kNumBytes = 1;
 
-    // int LowO2ServoEndpoint;
-    // int HighO2ServoEndpoint;
+    float InhalationPressure;                       // cmH2O
+    float InhalationFlow;                           // L/min
 
-    public float InhalationPressure = 0.0f;
-    public float InhalationFlow = 0.0f;
+    float ExhalationPressure;                       // cmH2O
+    float ExhalationFlow;                           // L/min
 
-    public float ExhalationPressure = 0.0f;
-    public float ExhalationFlow = 0.0f;
+    float O2ValveAngle;                             // degrees
+    float AirValveAngle;                            // degrees
 
-    public float O2ValveAngle = 0.0f;
-    public float AirValveAngle = 0.0f;
+    float TotalFlowLitersPerMin;                    // L/min
 
-    public byte LastReceiveValid = 0;
+    float MinuteVentilationLitersPerMin;            // L/min
+    float RespiratoryFrequencyBreathsPerMin;        // breaths/min
+
+    float InhalationTidalVolume;                    // ml
+    float ExhalationTidalVolume;                    // ml
+
+    float PressurePeak;                             // cmH2O
+    float PressurePlateau;                          // cmH2O
+    float PressurePeep;                             // cmH2O
+
+    float IERatio;                                  // unitless
+
+    byte LastReceiveValid;
 
     public boolean IsValid()
     {
@@ -59,6 +70,20 @@ class MachineState extends SerializedState
         os.O2ValveAngle = bb.getFloat();
         os.AirValveAngle = bb.getFloat();
 
+        os.TotalFlowLitersPerMin = bb.getFloat();
+
+        os.MinuteVentilationLitersPerMin = bb.getFloat();
+        os.RespiratoryFrequencyBreathsPerMin = bb.getFloat();
+
+        os.InhalationTidalVolume = bb.getFloat();
+        os.ExhalationTidalVolume = bb.getFloat();
+
+        os.PressurePeak = bb.getFloat();
+        os.PressurePlateau = bb.getFloat();
+        os.PressurePeep = bb.getFloat();
+
+        os.IERatio = bb.getFloat();
+        
         os.LastReceiveValid = bb.get();
 
         int serializedHash = bb.getInt();
