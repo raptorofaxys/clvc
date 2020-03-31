@@ -204,6 +204,7 @@ void UpdateSerial()
       infoVTe.SetValue(ms.ExhalationTidalVolume);
 
       graphPressure.SetValue(ms.InhalationPressure);
+      graphPressure.SetBGColor(ms.BreathPhase == 0 ? #282828 : #1E1E1E);
       graphFlow.SetValue(ms.Debug3);
       graphVolume.SetValue((ms.O2ValveOpening + ms.AirValveOpening) * 600.0f);
 

@@ -9,7 +9,7 @@ class MachineState extends SerializedState
     final static int kNumFloats = 27;
     final static int kNumInts = 1;
     final static int kNumChars = 0;
-    final static int kNumBytes = 1;
+    final static int kNumBytes = 2;
 
     float InhalationPressure;                       // cmH2O
     float InhalationFlow;                           // L/min
@@ -34,6 +34,8 @@ class MachineState extends SerializedState
 
     float EffectiveInspirationTime;                 // s
     float IERatio;                                  // unitless; how long expiration is compared to inspiration
+
+    byte BreathPhase;                               // 0: Inhalation, 1: Exhalation, 2: Rest
 
     float RawUIMessagesPerSecond;                   // count/s
     float ValidUIMessagesPerSecond;                 // count/s
@@ -104,6 +106,8 @@ class MachineState extends SerializedState
 
         os.EffectiveInspirationTime = bb.getFloat();
         os.IERatio = bb.getFloat();
+        
+        os.BreathPhase = bb.get();
         
         os.RawUIMessagesPerSecond = bb.getFloat();
         os.ValidUIMessagesPerSecond = bb.getFloat();

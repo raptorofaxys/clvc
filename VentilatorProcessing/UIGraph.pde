@@ -25,6 +25,8 @@ class UIGraph extends UIElementRT
     _rangeMaxY = rangeMaxY;
     _colorLine = colorLine;
     _colorDot = colorLine;
+
+    _samplesBGColor[0] = #1E1E1E;
   }
 
   public void SetValue(float value)
@@ -46,7 +48,7 @@ class UIGraph extends UIElementRT
     _sampleIndex = _sampleIndex >= _sampleCount ? 0 : _sampleIndex;
 
     _samplesValue[_sampleIndex] = currentValue;
-    _samplesBGColor[_sampleIndex] = #1E1E1E;
+    _samplesBGColor[_sampleIndex] = currentBGColor;
   }
 
   private int GetPrevSampleIndex()

@@ -1032,6 +1032,8 @@ struct __attribute__((packed)) MachineState
     float EffectiveInspirationTime;                 // s
     float IERatio;                                  // unitless; how long expiration is compared to inspiration
 
+    uint8_t BreathPhase;                            // see BreathPhase
+
     float RawUIMessagesPerSecond;                   // count/s
     float ValidUIMessagesPerSecond;                 // count/s
     float MachineStateMessagesPerSecond;            // count/s
@@ -1711,7 +1713,7 @@ void loop()
             // machineState.Debug4 = errorRate;
             // machineState.Debug5 = correctionP;
             // machineState.Debug6 = correctionD;
-            // machineState.Debug7 = triggerLogic.GetBreathPhase();
+            machineState.BreathPhase = triggerLogic.GetBreathPhase();
 
             SendMachineState(machineState);
 
