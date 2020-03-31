@@ -83,7 +83,7 @@ void setup()
   rightGroup = new UIVerticalFracGroup(0.1, 1.0, new UIElement[] {trackBar});
   runtimeGroup = new UIHorizontalFracGroup(0, 0, width, height, new UIElement[] {mainGroup, rightGroup});
 
-  //port = new Serial(this, "COM7", 115200); // Change this to the name of your own com port - might need UI for this
+  port = new Serial(this, "COM3", 115200); // Change this to the name of your own com port - might need UI for this
 }
 
 void draw()
