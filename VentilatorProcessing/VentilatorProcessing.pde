@@ -174,9 +174,10 @@ void UpdateSerial()
          println("ms.InhalationPressure: " + ms.InhalationPressure);
         // println("Target pressure: " + ms.Debug3);
 
-        println("Tracking: " + ms.Debug1);
-        // println("Gf1: " + ms.Debug2);
-        println("Gf2: " + ms.Debug3);
+        // println("Tracking: " + ms.Debug1);
+        println("GasL: " + ms.Debug1);
+        println("FlowL: " + ms.Debug2);
+        println("Backpressure: " + ms.Debug3);
         // println("Gf3: " + ms.Debug4);
         // println("Gf4: " + ms.Debug5);
         
@@ -213,7 +214,7 @@ void UpdateSerial()
 
       graphPressure.SetValue(ms.InhalationPressure);
       graphPressure.SetBGColor(ms.BreathPhase == 0 ? #282828 : #1E1E1E);
-      graphFlow.SetValue(ms.Debug3);
+      graphFlow.SetValue(ms.Debug1 * 100.0f);
       graphVolume.SetValue((ms.O2ValveOpening + ms.AirValveOpening) * 600.0f);
 
       // Correct the inspiration time as it is limited by the controller according to other constants

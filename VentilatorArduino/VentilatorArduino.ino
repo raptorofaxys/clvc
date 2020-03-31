@@ -1369,7 +1369,7 @@ public:
 
         if (BreathPhaseTracker::IsTrackedPhase(phase))
         {
-            fe.UpdateTrackedPhase(deltaSeconds, _inhalationPressureSensor.GetPressureCmH2O());
+            fe.UpdateTrackedPhase(_inhalationPressureSensor.GetPressureCmH2O(), deltaSeconds);
         }
     }
 private:
@@ -1414,7 +1414,7 @@ public:
         _lastPeakPressure = _peakPressure;
     }
 
-    void UpdateTrackedPhase(float, float pressure)
+    void UpdateTrackedPhase(float pressure, float)
     {
         _peakPressure = max(_peakPressure, pressure);
     }
@@ -1448,7 +1448,7 @@ public:
         _lastMeanPressure = _pressureSum / max(_phaseTime, 0.0001f);
     }
 
-    void UpdateTrackedPhase(float deltaSeconds, float pressure)
+    void UpdateTrackedPhase(float pressure, float deltaSeconds)
     {
         _pressureSum += pressure * deltaSeconds;
         _phaseTime += deltaSeconds;
@@ -1492,7 +1492,7 @@ public:
         _isTracking = false;
     }
 
-    void UpdateTrackedPhase(float deltaSeconds, float pressure)
+    void UpdateTrackedPhase(float pressure, float deltaSeconds)
     {
         _pressureHpf = HighPassFilterAbsDelta(_pressureHpf, pressure, _lastPressure, 0.001f, deltaSeconds);
         _lastPressure = pressure;
@@ -1573,12 +1573,51 @@ void setup()
 #define ENABLE_O2_VALVE_SERVO 1
 #define ENABLE_AIR_VALVE_SERVO 1
 
-// class VirtualLung
-// {
-// public:
+#if VIRTUAL_INPUTS
+class VirtualLung
+{
+public:
+    VirtualLung(float capacityL, float startingGasL, float pressureAtCapacity)
+        : _capacityL(capacityL)
+        , _containedGasL(startingGasL)
+        , _pressureAtCapacity(pressureAtCapacity)
+        , _flow(0.0f)
+    {
+    }
 
-//     float capacityMl;
-// };
+    void Update(float pressure, float deltaSeconds)
+    {
+        float backPressure = (_containedGasL / _capacityL) * _pressureAtCapacity;
+        globalDebugFloat1 = backPressure;
+        
+        float deltaPressure = pressure - backPressure;
+        _flow = deltaPressure / kFlowResistance;
+
+        _containedGasL += _flow * deltaSeconds;
+        _containedGasL = max(_containedGasL, 0.0f);
+    }
+
+    float GetContainedGas()
+    {
+        return _containedGasL;
+    }
+
+    float GetFlow()
+    {
+        return _flow;
+    }
+
+private:
+    const float kFlowResistance = 10.0f;
+
+    float _capacityL;
+    float _containedGasL;
+
+    float _pressureAtCapacity;
+
+    float _flow;
+};
+#endif
 
 void ConfigureDefaultUIState(UIState& uiState)
 {
@@ -1671,6 +1710,10 @@ void loop()
     PlateauPressureTracker<InhalationPhaseTracker> plateauPressureTracker(triggerLogic, inhalationPressureSensor);
     PlateauPressureTracker<ExhalationAndRestPhaseTracker> peepPressureTracker(triggerLogic, inhalationPressureSensor);
 
+#if VIRTUAL_INPUTS
+    VirtualLung lung(0.650f, 0.150f, 25.0f);
+#endif
+
     float o2Opening = 0.0f;
     float airOpening = 0.0f;
     float lastError = 0.0f;
@@ -1692,6 +1735,7 @@ void loop()
         airValve.Update(deltaSeconds);
         inhalationPressureSensor.SetVirtualServoOpening(o2Valve.GetPosition01(), airValve.GetPosition01(), deltaSeconds);
         exhalationPressureSensor.SetVirtualServoOpening(o2Valve.GetPosition01(),  airValve.GetPosition01(), deltaSeconds);
+        lung.Update(inhalationPressureSensor.GetPressureCmH2O(), deltaSeconds);
 #endif
 
         ReceiveUIState(uiState);
@@ -1796,6 +1840,10 @@ void loop()
 
             // machineState.Debug1 = uiState.InspirationTime;
             
+            machineState.Debug1 = lung.GetContainedGas();
+            machineState.Debug2 = lung.GetFlow();
+            machineState.Debug3 = globalDebugFloat1;
+
             // machineState.Debug1 = error;
             // machineState.Debug2 = correction;
             // machineState.Debug3 = targetInhalationPressure;
