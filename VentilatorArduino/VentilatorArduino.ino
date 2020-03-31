@@ -1196,13 +1196,15 @@ namespace BreathPhase
 class TriggerLogic
 {
 public:
-    void ConfigureFromUIState(const UIState& uiState)
+    TriggerLogic(UIState& uiState)
+        : _uiState(uiState)
     {
-        _uiState = uiState;
     }
 
     void Update()
     {
+        ValidateUIState();
+
         _justTriggered = false;
         
         long nowMs = millis();
@@ -1253,12 +1255,17 @@ public:
 
     long GetExpiratoryTimeMs() const
     {
-        return GetInspiratoryTimeMs() * 2;
+        return GetInspiratoryTimeMs() * kMinimumIERatio;
     }
 
     float GetTimePerTriggeredBreathMs() const
     {
         return 60000.0f / _uiState.TimerTriggerBreathsPerMin;
+    }
+
+    long GetExpiratoryAndRestTimeMs() const
+    {
+        return GetTimePerTriggeredBreathMs() - GetInspiratoryTimeMs();
     }
 
     // After this amount of time, the patient is considered "at rest" and a breath could be manually retriggered
@@ -1269,7 +1276,7 @@ public:
 
     float GetIERatio() const
     {
-        return (GetTimePerTriggeredBreathMs() - GetInspiratoryTimeMs()) / GetInspiratoryTimeMs();
+        return GetExpiratoryAndRestTimeMs() / GetInspiratoryTimeMs();
     }
 
     BreathPhase::Type GetBreathPhase() const
@@ -1292,9 +1299,16 @@ public:
     }
 
 private:
+    const float kMinimumIERatio = 2.0f;
     const long kMinimumReTriggerMs = 2000;
     
-    UIState _uiState;
+    void ValidateUIState()
+    {
+        float minTimeSeconds = GetTimePerTriggeredBreathMs() / (1.0f + kMinimumIERatio) / 1000.0f;
+        _uiState.InspirationTime = min(_uiState.InspirationTime, minTimeSeconds);
+    }
+
+    UIState& _uiState;
 
     bool _pendingTrigger = false;
 
@@ -1536,7 +1550,7 @@ void loop()
     MachineState machineState;
     Zero(machineState);
 
-    TriggerLogic triggerLogic;
+    TriggerLogic triggerLogic(uiState);
 
     PeakPressureTracker peakPressureTracker(triggerLogic, inhalationPressureSensor);
     MeanPressureTracker plateauPressureTracker(triggerLogic, inhalationPressureSensor, BreathPhase::Inhalation);
@@ -1567,20 +1581,13 @@ void loop()
         ReceiveUIState(uiState);
 
         ProcessUIStateEvents(uiState, triggerLogic);
-        
-        triggerLogic.ConfigureFromUIState(uiState);
-        triggerLogic.Update();
 
+        triggerLogic.Update();
         peakPressureTracker.Update();
         plateauPressureTracker.Update(deltaSeconds);
         peepPressureTracker.Update(deltaSeconds);
 
-        switch (triggerLogic.GetBreathPhase())
-        {
-            case BreathPhase::Inhalation: machineState.TotalFlowLitersPerMin = 40.0f; break;
-            case BreathPhase::Exhalation: machineState.TotalFlowLitersPerMin = 20.0f; break;
-            case BreathPhase::Rest: machineState.TotalFlowLitersPerMin = 0.0f; break;
-        }
+        uiState.Peep = min(uiState.Peep, uiState.PressureControlInspiratoryPressure);
 
         float targetInhalationPressure = 0.0f;
         switch (uiState.ControlMode)
@@ -1656,13 +1663,22 @@ void loop()
             machineState.PressurePeep = peepPressureTracker.GetMeanPressureCmH2O();
             machineState.IERatio = triggerLogic.GetIERatio();
 
-            machineState.Debug1 = error;
-            machineState.Debug2 = correction;
-            machineState.Debug3 = targetInhalationPressure;
-            machineState.Debug4 = errorRate;
-            machineState.Debug5 = correctionP;
-            machineState.Debug6 = correctionD;
-            machineState.Debug7 = triggerLogic.GetBreathPhase();
+            // switch (triggerLogic.GetBreathPhase())
+            // {
+            //     case BreathPhase::Inhalation: machineState.TotalFlowLitersPerMin = 40.0f; break;
+            //     case BreathPhase::Exhalation: machineState.TotalFlowLitersPerMin = 20.0f; break;
+            //     case BreathPhase::Rest: machineState.TotalFlowLitersPerMin = 0.0f; break;
+            // }
+            
+            // machineState.Debug1 = uiState.InspirationTime;
+            
+            // machineState.Debug1 = error;
+            // machineState.Debug2 = correction;
+            // machineState.Debug3 = targetInhalationPressure;
+            // machineState.Debug4 = errorRate;
+            // machineState.Debug5 = correctionP;
+            // machineState.Debug6 = correctionD;
+            // machineState.Debug7 = triggerLogic.GetBreathPhase();
 
             SendMachineState(machineState);
 

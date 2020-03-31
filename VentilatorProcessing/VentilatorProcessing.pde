@@ -52,12 +52,14 @@ void setup()
 
   UIElement text1, text2, text3, text4, btg, og1;
 
+  final float kMaxPressure = 40.0;
+
   menuButton = new UIMenuButton(0.4, 1.0);
   controlFiO2 = new UIControlButton(1.0, 1.0, "FiO2", 21.0, 21.0, 100.0);
-  controlPEEP = new UIControlButton(1.0, 1.0, "PEEP", 5.0, 0.0, 50.0);
-  controlRR = new UIControlButton(1.0, 1.0, "Resp. Rate", 15.0, 4.0, 100.0);
-  controlInspTime = new UIControlButton(1.0, 1.0, "Insp. Time", 1.0, 0.2, 8.0, 1);
-  controlIP = new UIControlButton(1.0, 1.0, "Insp. Pressure", 15.0, 0.0, 30.0);
+  controlPEEP = new UIControlButton(1.0, 1.0, "PEEP", 5.0, 0.0, kMaxPressure);
+  controlRR = new UIControlButton(1.0, 1.0, "Resp. Rate", 15.0, 4.0, 30.0);
+  controlInspTime = new UIControlButton(1.0, 1.0, "Insp. Time", 1.0, 0.5, 3.0, 1);
+  controlIP = new UIControlButton(1.0, 1.0, "Insp. Pressure", 15.0, 0.0, kMaxPressure);
   controlsGroup = new UIHorizontalFracGroup(1.0, 0.2, new UIElement[] {menuButton, controlFiO2, controlPEEP, controlRR, controlInspTime, controlIP});
   UIRadioButtonSet controlButtons = new UIRadioButtonSet(new UIRadioButton[]
     {
@@ -173,13 +175,15 @@ void UpdateSerial()
       // println("CorrectionP: " + ms.Debug5);
       // println("CorrectionD: " + ms.Debug6);
 
-      println("phase: " + ms.Debug7);
+      // println("insp time: " + ms.Debug1);
+      // println("min insp time: " + ms.Debug2);
+      // println("phase: " + ms.Debug7);
 
       // println("ms.O2ValveOpening: " + ms.O2ValveOpening);
       // println("ms.AirValveOpening: " + ms.AirValveOpening);
       // println("Raws UI recv/s: " + ms.RawUIMessagesPerSecond);
       // println("Valid UI recv/s: " + ms.ValidUIMessagesPerSecond);
-      println("Send/s: " + ms.MachineStateMessagesPerSecond);
+      // println("Send/s: " + ms.MachineStateMessagesPerSecond);
       // println("MCU last received valid: " + ms.LastReceiveValid);
       // println("ms.TotalFlowLitersPerMin: " + ms.TotalFlowLitersPerMin);
       println("MCU error mask: " + Integer.toHexString(ms.ErrorMask));
