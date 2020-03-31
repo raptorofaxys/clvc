@@ -1299,7 +1299,7 @@ public:
     }
 
 private:
-    const float kMinimumIERatio = 2.0f;
+    const float kMinimumIERatio = 1.0f;
     const long kMinimumReTriggerMs = 2000;
     
     void ValidateUIState()
@@ -1364,13 +1364,13 @@ private:
     float _peakPressure = 0.0f;
 };
 
+template <class BreathPhaseTracker>
 class MeanPressureTracker
 {
 public:
-    MeanPressureTracker(const TriggerLogic& triggerLogic, const PressureSensor& inhalationPressureSensor, BreathPhase::Type breathPhase)
+    MeanPressureTracker(const TriggerLogic& triggerLogic, const PressureSensor& inhalationPressureSensor)
         : _triggerLogic(triggerLogic)
         , _inhalationPressureSensor(inhalationPressureSensor)
-        , _trackedBreathPhase(breathPhase)
     {
     }
 
@@ -1380,12 +1380,12 @@ public:
 
         if (phase != _lastBreathPhase)
         {
-            if (phase == _trackedBreathPhase)
+            if (BreathPhaseTracker::IsTrackedPhase(phase))
             {
                 _pressureSum = 0.0f;
                 _phaseTime = 0.0f;
             }
-            else if (_lastBreathPhase == _trackedBreathPhase)
+            else if (BreathPhaseTracker::IsTrackedPhase(_lastBreathPhase))
             {
                 // Tracked phase just finished, latch the mean pressure
                 _lastMeanPressure = _pressureSum / _phaseTime;
@@ -1394,7 +1394,7 @@ public:
             _lastBreathPhase = phase;
         }
 
-        if (phase == _trackedBreathPhase)
+        if (BreathPhaseTracker::IsTrackedPhase(phase))
         {
             _pressureSum += _inhalationPressureSensor.GetPressureCmH2O() * deltaSeconds;
             _phaseTime += deltaSeconds;
@@ -1409,13 +1409,28 @@ private:
     const TriggerLogic& _triggerLogic;
     const PressureSensor& _inhalationPressureSensor;
 
-    BreathPhase::Type _trackedBreathPhase = BreathPhase::Rest;
     BreathPhase::Type _lastBreathPhase = BreathPhase::Rest;
 
     float _lastMeanPressure = 0.0f;
     
     float _pressureSum = 0.0f;
     float _phaseTime = 0.0f;
+};
+
+struct InhalationPhaseTracker
+{
+    static bool IsTrackedPhase(BreathPhase::Type phase)
+    {
+        return phase == BreathPhase::Inhalation;
+    }
+};
+
+struct ExhalationAndRestPhaseTracker
+{
+    static bool IsTrackedPhase(BreathPhase::Type phase)
+    {
+        return phase != BreathPhase::Inhalation;
+    }
 };
 
 void ProcessUIStateEvents(struct UIState& uiState, class TriggerLogic& triggerLogic)
@@ -1553,8 +1568,8 @@ void loop()
     TriggerLogic triggerLogic(uiState);
 
     PeakPressureTracker peakPressureTracker(triggerLogic, inhalationPressureSensor);
-    MeanPressureTracker plateauPressureTracker(triggerLogic, inhalationPressureSensor, BreathPhase::Inhalation);
-    MeanPressureTracker peepPressureTracker(triggerLogic, inhalationPressureSensor, BreathPhase::Exhalation);
+    MeanPressureTracker<InhalationPhaseTracker> plateauPressureTracker(triggerLogic, inhalationPressureSensor);
+    MeanPressureTracker<ExhalationAndRestPhaseTracker> peepPressureTracker(triggerLogic, inhalationPressureSensor);
 
     float o2Opening = 0.0f;
     float airOpening = 0.0f;
