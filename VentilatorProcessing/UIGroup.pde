@@ -218,11 +218,12 @@ class UIControlButton extends UIOverlappingGroup
   private UIText _textValue;
   private UIControlRadioButton _button;
   private int _decimals;
+  private float _value;
   private float _rangeMin, _rangeMax;
 
   public UIControlRadioButton GetRadioButton() { return _button; }
 
-  public UIControlButton(float fracW, float fracH, String label, float rangeMin, float rangeMax, int decimals)
+  public UIControlButton(float fracW, float fracH, String label, float value, float rangeMin, float rangeMax, int decimals)
   {
     super(fracW, fracH, null);
     _button = new UIControlRadioButton(1.0, 1.0, this);
@@ -230,18 +231,22 @@ class UIControlButton extends UIOverlappingGroup
     _textValue = new UIText(1.0, 0.6, "--", fontSemilight, 64, 255, CENTER, TOP);
     _textGroup = new UIVerticalFracGroup(1.0, 1.0, new UIElement[] {_textLabel, _textValue});
     SetChildren(new UIElement[] {_button, _textGroup});
+    SetValue(value);
     _decimals = decimals;
     _rangeMin = rangeMin;
     _rangeMax = rangeMax;
   }
 
-  public UIControlButton(float fracW, float fracH, String label, float rangeMin, float rangeMax)
+  public UIControlButton(float fracW, float fracH, String label, float value, float rangeMin, float rangeMax)
   {
-    this(fracW, fracH, label, rangeMin, rangeMax, 0);
+    this(fracW, fracH, label, value, rangeMin, rangeMax, 0);
   }
+
+  public float GetValue() { return _value; }
 
   public void SetValue(float value)
   {
+    _value = value;
     _textValue.SetText(FloatToRoundedString(value, _decimals));
   }
 

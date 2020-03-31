@@ -53,11 +53,11 @@ void setup()
   UIElement text1, text2, text3, text4, btg, og1;
 
   menuButton = new UIMenuButton(0.4, 1.0);
-  controlFiO2 = new UIControlButton(1.0, 1.0, "FiO2", 21.0, 100.0);
-  controlPEEP = new UIControlButton(1.0, 1.0, "PEEP", 0.0, 50.0);
-  controlRR = new UIControlButton(1.0, 1.0, "Resp. Rate", 4.0, 100.0);
-  controlInspTime = new UIControlButton(1.0, 1.0, "Insp. Time", 0.25, 10.0);
-  controlIP = new UIControlButton(1.0, 1.0, "Insp. Pressure", 0.0, 30.0);
+  controlFiO2 = new UIControlButton(1.0, 1.0, "FiO2", 21.0, 21.0, 100.0);
+  controlPEEP = new UIControlButton(1.0, 1.0, "PEEP", 5.0, 0.0, 50.0);
+  controlRR = new UIControlButton(1.0, 1.0, "Resp. Rate", 15.0, 4.0, 100.0);
+  controlInspTime = new UIControlButton(1.0, 1.0, "Insp. Time", 1.0, 0.25, 10.0);
+  controlIP = new UIControlButton(1.0, 1.0, "Insp. Pressure", 15.0, 0.0, 30.0);
   controlsGroup = new UIHorizontalFracGroup(1.0, 0.2, new UIElement[] {menuButton, controlFiO2, controlPEEP, controlRR, controlInspTime, controlIP});
   UIRadioButtonSet controlButtons = new UIRadioButtonSet(new UIRadioButton[]
     {
@@ -214,17 +214,17 @@ void UpdateSerial()
   long nowMs = millis();
   if (nowMs - lastSendMs > 33)
   {
-    uiState.FiO2 = 0.3f;
+    uiState.FiO2 = controlFiO2.GetValue();
     uiState.ControlMode = 1;
-    uiState.PressureControlInspiratoryPressure = 15.0f;
+    uiState.PressureControlInspiratoryPressure = controlIP.GetValue();
     uiState.VolumeControlMaxPressure = 25.0f;
     uiState.VolumeControlTidalVolume = 0.450f;
-    uiState.Peep = 5.0f;
-    uiState.InspirationTime = 1.0f;
+    uiState.Peep = controlPEEP.GetValue();
+    uiState.InspirationTime = controlInspTime.GetValue();
     uiState.InspirationFilterRate = 0.01f;
     uiState.ExpirationFilterRate = 0.02f;
     uiState.TriggerMode = 1;
-    uiState.TimerTriggerBreathsPerMin = 15;
+    uiState.TimerTriggerBreathsPerMin = (char)controlRR.GetValue();
     uiState.PatientEffortTriggerMinBreathsPerMin = 8;
     uiState.PatientEffortTriggerLitersPerMin = 2.5f;
 

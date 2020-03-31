@@ -148,15 +148,8 @@ class UIRadioButton extends UIButton
       _set.SelectID(_id);
   }
 
-  public void Select()
-  {
-    println("slndeinl");
-  }
-
-  public void UnSelect()
-  {
-    println("lllkwejwo");
-  }
+  public void Select() {}
+  public void UnSelect() {}
 }
 
 class UIControlRadioButton extends UIRadioButton
@@ -200,7 +193,6 @@ class UIRadioButtonSet
   {
     if (id >= 0 && id < _radioButtons.length)
     {
-      println("Selecting: ", id);
       if (id != _selectedID)
       {
         for (int i = 0; i < _radioButtons.length; i++)
