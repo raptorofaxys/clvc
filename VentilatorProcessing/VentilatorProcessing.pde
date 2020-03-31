@@ -5,11 +5,16 @@ boolean appTouchScreen = false;
 boolean appSmooth = true;
 
 UIButton b1, b2, b3, b4;
-UIGraph GraphPressure, GraphFlow, GraphVolume;
-UITrackBar TrackBar;
-UIElement InfoPanel;
-UIGroup RootGroup, MainGroup, DataGroup, GraphGroup, SettingsGroup, RightGroup;
+UIGraph graphPressure, graphFlow, graphVolume;
+UIInfoText infoPPeak, infoPMean, infoPEEP, infoRR, infoIE, infoMVe, infoVTi, infoVTe;
+UITrackBar trackBar;
+UIElement infoPanel;
+UIGroup runtimeGroup, mainGroup, dataGroup, graphGroup, settingsGroup, rightGroup;
+
 PFont fontText, fontNumbers;
+color colorPressure = #ffbb00;
+color colorFlow = #00ff99;
+color colorVolume = #0099ff;
 
 Serial port;
 long lastSendMs;
@@ -43,10 +48,9 @@ void setup()
   fontText = loadFont("SegoeUI_Bold_64.vlw");
   fontNumbers = loadFont("SegoeUI_Semilight_64.vlw");
 
-  UIElement text1, text2, btg, og1;
+  UIElement text1, text2, text3, text4, btg, og1;
 
-  TrackBar = new UITrackBar(1.0, 1.0);
-  InfoPanel = new UIElement(0.2, 1.0);
+  trackBar = new UITrackBar(1.0, 1.0);
 
   b1 = new UIButton(0.2, 1.0);
   text1 = new UIText(1.0, 40, "PEEP", fontText, 24, 100, CENTER, CENTER);
@@ -57,16 +61,29 @@ void setup()
   b3 = new UIButton(0.2, 1.0);
   b4 = new UIButton(0.2, 1.0);
 
-  GraphPressure = new UIGraph(1.0, 1.0, 512, -1, 30, #ffbb00);
-  GraphFlow = new UIGraph(1.0, 1.0, 512, -100.0, 100.0, #00ff99);
-  GraphVolume = new UIGraph(1.0, 1.0, 512, -40.0, 800.0, #0099ff);
-  GraphGroup = new UIVerticalFracGroup(0.8, 1.0, new UIElement[] {GraphPressure, GraphFlow, GraphVolume});
+  // Graphs
+  graphPressure = new UIGraph(1.0, 1.0, 512, -1, 30, #ffbb00);
+  graphFlow = new UIGraph(1.0, 1.0, 512, -100.0, 100.0, #00ff99);
+  graphVolume = new UIGraph(1.0, 1.0, 512, -40.0, 800.0, #0099ff);
+  graphGroup = new UIVerticalFracGroup(0.8, 1.0, new UIElement[] {graphPressure, graphFlow, graphVolume});
 
-  DataGroup = new UIHorizontalFracGroup(1.0, 0.8, new UIElement[] {GraphGroup, InfoPanel});
-  SettingsGroup = new UIHorizontalFracGroup(1.0, 0.2, new UIElement[] {og1, b2, b3, b4});
-  MainGroup = new UIVerticalFracGroup(0.9, 1.0, new UIElement[] {DataGroup, SettingsGroup});
-  RightGroup = new UIVerticalFracGroup(0.1, 1.0, new UIElement[] {TrackBar});
-  RootGroup = new UIHorizontalFracGroup(0, 0, width, height, new UIElement[] {MainGroup, RightGroup});
+  // Info Panel
+  UIElement sp1 = new UIElement(1.0, 0.01);
+  infoPPeak = new UIInfoText(1.0, 1.0, "PPeak", colorPressure);
+  infoPMean = new UIInfoText(1.0, 1.0, "PMean", colorPressure);
+  infoPEEP = new UIInfoText(1.0, 1.0, "PEEP", colorPressure);
+  infoRR = new UIInfoText(1.0, 1.0, "Resp Rate", colorFlow);
+  infoIE = new UIInfoText(1.0, 1.0, "I:E", colorFlow);
+  infoMVe = new UIInfoText(1.0, 1.0, "MVe", colorVolume);
+  infoVTi = new UIInfoText(1.0, 1.0, "VTi", colorVolume);
+  infoVTe = new UIInfoText(1.0, 1.0, "VTe", colorVolume);
+  infoPanel = new UIVerticalFracGroup(0.2, 1.0, new UIElement[] {infoPPeak, infoPMean, infoPEEP, infoRR, infoIE, infoMVe, infoVTi, infoVTe});
+
+  dataGroup = new UIHorizontalFracGroup(1.0, 0.8, new UIElement[] {graphGroup, infoPanel});
+  settingsGroup = new UIHorizontalFracGroup(1.0, 0.2, new UIElement[] {og1, b2, b3, b4});
+  mainGroup = new UIVerticalFracGroup(0.9, 1.0, new UIElement[] {dataGroup, settingsGroup});
+  rightGroup = new UIVerticalFracGroup(0.1, 1.0, new UIElement[] {trackBar});
+  runtimeGroup = new UIHorizontalFracGroup(0, 0, width, height, new UIElement[] {mainGroup, rightGroup});
 
   //port = new Serial(this, "COM7", 115200); // Change this to the name of your own com port - might need UI for this
 }
@@ -82,29 +99,29 @@ void Update()
   //* For testing resizable window with the lack of a proper resize event
   if (!appFullScreen)
   {
-    RootGroup.Transform.SetWH(width, height);
-    RootGroup.UpdateChildrenLayout();
+    runtimeGroup.Transform.SetWH(width, height);
+    runtimeGroup.UpdateChildrenLayout();
   }
   //*/
-  RootGroup.Update();
+  runtimeGroup.Update();
 
   UpdateSerial();
 
   float fakeVal1 = noise(millis() * 0.001) * 2.0 * 14.0 + 5.0;
   float fakeVal2 = (sin(millis() * TWO_PI * 0.00033) + noise(millis() * 0.002) - 0.5) * 0.5;
-  
+
   if (port == null)
   {
-    GraphPressure.SetValue(fakeVal1);
-    GraphFlow.SetValue(fakeVal2 * 60.0);
-    GraphVolume.SetValue(max(0, fakeVal2 * 500.0));
+    graphPressure.SetValue(fakeVal1);
+    graphFlow.SetValue(fakeVal2 * 60.0);
+    graphVolume.SetValue(max(0, fakeVal2 * 500.0));
   }
 }
 
 void Render()
 {
   background(0);
-  RootGroup.Render();
+  runtimeGroup.Render();
 }
 
 void UpdateSerial()
@@ -143,9 +160,9 @@ void UpdateSerial()
 
     if (ms.IsValid())
     {
-      GraphPressure.SetValue(ms.InhalationPressure);
-      GraphFlow.SetValue(ms.Debug3);
-      GraphVolume.SetValue((ms.O2ValveOpening + ms.AirValveOpening) * 300.0f);
+      graphPressure.SetValue(ms.InhalationPressure);
+      graphFlow.SetValue(ms.Debug3);
+      graphVolume.SetValue((ms.O2ValveOpening + ms.AirValveOpening) * 300.0f);
     }
     else
     {
