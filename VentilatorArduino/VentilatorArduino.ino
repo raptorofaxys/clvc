@@ -1388,7 +1388,7 @@ public:
             else if (BreathPhaseTracker::IsTrackedPhase(_lastBreathPhase))
             {
                 // Tracked phase just finished, latch the mean pressure
-                _lastMeanPressure = _pressureSum / _phaseTime;
+                _lastMeanPressure = _pressureSum / max(_phaseTime, 0.0001f);
             }
 
             _lastBreathPhase = phase;
