@@ -425,13 +425,13 @@ public:
         _lastValue = buttonValue;
     }
 
-    bool IsPressed() { return _lastValue == (_activeLow ? 0 : 1); }
-    bool JustPressed() { return _justPressed; }
-    bool IsHeld() { return IsPressed() && _lastHeld; }
-    bool JustHeld() { return _justHeld; }
-    bool JustReleased() { return _justRelease; }
-    bool JustReleasedAndWasHeld() { return _justRelease && _lastHeld; }
-    bool JustReleasedAndWasNotHeld() { return _justRelease && !_lastHeld; }
+    bool IsPressed() const { return _lastValue == (_activeLow ? 0 : 1); }
+    bool JustPressed() const { return _justPressed; }
+    bool IsHeld() const { return IsPressed() && _lastHeld; }
+    bool JustHeld() const { return _justHeld; }
+    bool JustReleased() const { return _justRelease; }
+    bool JustReleasedAndWasHeld() const { return _justRelease && _lastHeld; }
+    bool JustReleasedAndWasNotHeld() const { return _justRelease && !_lastHeld; }
 
     void WaitForPress()
     {
@@ -626,7 +626,7 @@ public:
         pinMode(_pin, INPUT);
     }
 
-    float GetPressurePsi()
+    float GetPressurePsi() const
     {
 #if !VIRTUAL_INPUTS
         int rawValue = analogRead(_pin);
@@ -637,7 +637,7 @@ public:
 #endif
     }
 
-    float GetPressureCmH2O()
+    float GetPressureCmH2O() const
     {
         return GetPressurePsi() * kPsiToCmH2O;
     }
@@ -647,6 +647,10 @@ public:
     {
         const float kInputPsi = 1.0f;
         float totalPsi = o2Opening * kInputPsi + airOpening * kInputPsi;
+
+        _totalSeconds += deltaSeconds;
+        totalPsi *= 1.0f + sinf(_totalSeconds * 2.0f) * 0.5f;
+
         _virtualPressureReading = LowPassFilter(_virtualPressureReading, totalPsi, 0.0001f, deltaSeconds);
     }
 #endif
@@ -654,7 +658,7 @@ public:
 private:
     const float kPsiToCmH2O = 70.307f;
 
-    float UnitSampleToPsi(float v01)
+    float UnitSampleToPsi(float v01) const
     {
         const float kMinPsi = 0.0f;
         const float kMaxPsi = 1.0f;
@@ -666,6 +670,7 @@ private:
 
 #if VIRTUAL_INPUTS
     float _virtualPressureReading = 0.0f;
+    float _totalSeconds;
 #endif
 };
 
@@ -713,7 +718,7 @@ public:
         return _flowRate;
     }
 
-    uint32_t GetSerial()
+    uint32_t GetSerial() const
     {
         return _serial;
     }
@@ -902,7 +907,7 @@ public:
         _position = LinearApproach(_position, _targetPosition, 1.5f, deltaSeconds);
     }
     
-    float GetPosition01()
+    float GetPosition01() const
     {
         return _position;
     }
@@ -1241,23 +1246,23 @@ public:
         _pendingTrigger = true;
     }
 
-    long GetInspiratoryTimeMs()
+    long GetInspiratoryTimeMs() const
     {
         return static_cast<long>(_uiState.InspirationTime * 1000);
     }
 
-    long GetExpiratoryTimeMs()
+    long GetExpiratoryTimeMs() const
     {
         return GetInspiratoryTimeMs() * 2;
     }
 
     // After this amount of time, the patient is considered "at rest" and a breath could be manually retriggered
-    long GetCompleteBreathTimeMs()
+    long GetCompleteBreathTimeMs() const
     {
         return GetInspiratoryTimeMs() + GetExpiratoryTimeMs();
     }
 
-    BreathPhase::Type GetBreathPhase()
+    BreathPhase::Type GetBreathPhase() const
     {
         long timeSinceTrigger = millis() - _lastTriggerMs;
 
@@ -1285,6 +1290,54 @@ private:
 
     long _lastTriggerMs = 0;
     bool _justTriggered = false;
+};
+
+class PeakPressureTracker
+{
+public:
+    PeakPressureTracker(const TriggerLogic& triggerLogic, const PressureSensor& inhalationPressureSensor)
+        : _triggerLogic(triggerLogic)
+        , _inhalationPressureSensor(inhalationPressureSensor)
+    {
+    }
+
+    void Update()
+    {
+        BreathPhase::Type phase = _triggerLogic.GetBreathPhase();
+
+        if (phase != _lastBreathPhase)
+        {
+            if (phase == BreathPhase::Inhalation)
+            {
+                _peakPressure = 0.0f;
+            }
+            else if (phase == BreathPhase::Exhalation)
+            {
+                // Inhalation just finished, latch the peak pressure
+                _lastPeakPressure = _peakPressure;
+            }
+
+            _lastBreathPhase = phase;
+        }
+
+        if (phase == BreathPhase::Inhalation)
+        {
+            _peakPressure = max(_peakPressure, _inhalationPressureSensor.GetPressureCmH2O());
+        }
+    }
+
+    float GetPeakPressureCmH2O() const
+    {
+        return _lastPeakPressure;
+    }
+private:
+    const TriggerLogic& _triggerLogic;
+    const PressureSensor& _inhalationPressureSensor;
+
+    BreathPhase::Type _lastBreathPhase = BreathPhase::Rest;
+
+    float _lastPeakPressure = 0.0f;
+    float _peakPressure = 0.0f;
 };
 
 void ProcessUIStateEvents(struct UIState& uiState, class TriggerLogic& triggerLogic)
@@ -1410,7 +1463,7 @@ void loop()
 
     // float lpf = 0.0f;
     long lastUpdateMs = 0;
-    long lastSendMs = 0;
+    // long lastSendMs = 0;
 
     UIState uiState;
     Zero(uiState);
@@ -1420,6 +1473,8 @@ void loop()
     Zero(machineState);
 
     TriggerLogic triggerLogic;
+
+    PeakPressureTracker peakPressureTracker(triggerLogic, inhalationPressureSensor);
 
     float o2Opening = 0.0f;
     float airOpening = 0.0f;
@@ -1449,6 +1504,8 @@ void loop()
         
         triggerLogic.ConfigureFromUIState(uiState);
         triggerLogic.Update();
+
+        peakPressureTracker.Update();
 
         switch (triggerLogic.GetBreathPhase())
         {
@@ -1526,7 +1583,7 @@ void loop()
             machineState.RespiratoryFrequencyBreathsPerMin = 9.0f;
             machineState.InhalationTidalVolume = 10.0f;
             machineState.ExhalationTidalVolume = 11.0f;
-            machineState.PressurePeak = 12.0f;
+            machineState.PressurePeak = peakPressureTracker.GetPeakPressureCmH2O();
             machineState.PressurePlateau = 13.0f;
             machineState.PressurePeep = 14.0f;
             machineState.IERatio = 15.0f;
@@ -1565,7 +1622,7 @@ void loop()
             // if (nowMs - lastSendMs > kMachineStateSendIntervalMs)
             {
                 // delay(40);
-                lastSendMs = nowMs;
+                // lastSendMs = nowMs;
             }
         }
     }

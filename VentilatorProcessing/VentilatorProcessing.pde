@@ -158,9 +158,18 @@ void UpdateSerial()
 
     if (ms.IsValid())
     {
+      infoPPeak.SetValue(ms.PressurePeak);
+      infoPMean.SetValue(ms.PressurePlateau);
+      infoPEEP.SetValue(ms.PressurePeep);
+      infoRR.SetValue(ms.RespiratoryFrequencyBreathsPerMin);
+      infoIE.SetValue(ms.IERatio);
+      infoMVe.SetValue(ms.MinuteVentilationLitersPerMin);
+      infoVTi.SetValue(ms.InhalationTidalVolume);
+      infoVTe.SetValue(ms.ExhalationTidalVolume);
+
       graphPressure.SetValue(ms.InhalationPressure);
       graphFlow.SetValue(ms.Debug3);
-      graphVolume.SetValue((ms.O2ValveOpening + ms.AirValveOpening) * 300.0f);
+      graphVolume.SetValue((ms.O2ValveOpening + ms.AirValveOpening) * 600.0f);
     }
     else
     {
@@ -188,6 +197,11 @@ void UpdateSerial()
     uiState.TimerTriggerBreathsPerMin = 20;
     uiState.PatientEffortTriggerMinBreathsPerMin = 8;
     uiState.PatientEffortTriggerLitersPerMin = 2.5f;
+
+    controlFiO2.SetValue(uiState.FiO2);
+    controlPEEP.SetValue(uiState.Peep);
+    controlRR.SetValue(uiState.TimerTriggerBreathsPerMin);
+    controlIP.SetValue(uiState.PressureControlInspiratoryPressure);
 
     byte[] packet = uiState.Serialize();
     port.write(packet);
