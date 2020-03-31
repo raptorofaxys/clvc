@@ -46,8 +46,8 @@ void setup()
     noCursor();
   }
 
-  fontBold = loadFont("SegoeUI_Bold_128.vlw");
-  fontSemilight = loadFont("SegoeUI_Semilight_128.vlw");
+  fontBold = loadFont("SegoeUI_Bold_64.vlw");
+  fontSemilight = loadFont("SegoeUI_Semilight_64.vlw");
 
   UIElement text1, text2, text3, text4, btg, og1;
 
@@ -71,8 +71,8 @@ void setup()
   infoPMean = new UIInfoText(1.0, 1.0, "PMean", colorPressure);
   infoPEEP = new UIInfoText(1.0, 1.0, "PEEP", colorPressure);
   infoRR = new UIInfoText(1.0, 1.0, "Resp Rate", colorFlow);
-  infoIE = new UIInfoText(1.0, 1.0, "I:E", colorFlow);
-  infoMVe = new UIInfoText(1.0, 1.0, "MVe", colorVolume);
+  infoIE = new UIInfoText(1.0, 1.0, "I:E", colorFlow, 1, "1:");
+  infoMVe = new UIInfoText(1.0, 1.0, "MVe", colorVolume, 1);
   infoVTi = new UIInfoText(1.0, 1.0, "VTi", colorVolume);
   infoVTe = new UIInfoText(1.0, 1.0, "VTe", colorVolume);
   infoPanel = new UIVerticalFracGroup(0.2, 1.0, new UIElement[] {infoPPeak, infoPMean, infoPEEP, infoRR, infoIE, infoMVe, infoVTi, infoVTe});

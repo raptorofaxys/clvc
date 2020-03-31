@@ -157,6 +157,17 @@ class UIText extends UIElement
     text(_text, x, y);
   }
 }
+// UIText wannabe static methods
+public static String FloatToRoundedString(float value, int decimals)
+{
+  // Rounded value to the decimal count
+  float p = pow(10, decimals);
+  float v = value * p;
+  v = (int)(v + 0.5) / p;
+  String formatString = String.format("%%.%df", decimals);
+
+  return String.format(formatString, value);
+}
 
 class UIButton extends UIElement
 {

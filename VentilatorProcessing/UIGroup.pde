@@ -183,18 +183,30 @@ class UIInfoText extends UIHorizontalFracGroup
 {
   private UIText _textLabel;
   private UIText _textValue;
+  private int _decimals;
+  private String _prefix;
 
-  public UIInfoText(float fracW, float fracH, String label, color textColor)
+  public UIInfoText(float fracW, float fracH, String label, color textColor, int decimals, String prefix)
   {
     super(fracW, fracH, null);
     _textLabel = new UIText(1.0, 1.0, label, fontSemilight, 24, textColor, LEFT, CENTER);
     _textValue = new UIText(1.0, 1.0, "--", fontBold, 24, textColor, RIGHT, CENTER);
     SetChildren(new UIElement[] {_textLabel, _textValue});
+    _decimals = decimals;
+    _prefix = prefix;
+  }
+  public UIInfoText(float fracW, float fracH, String label, color textColor, int decimals)
+  {
+    this(fracW, fracH, label, textColor, decimals, "");
+  }
+  public UIInfoText(float fracW, float fracH, String label, color textColor)
+  {
+    this(fracW, fracH, label, textColor, 0, "");
   }
 
   public void SetValue(float value)
   {
-    _textValue.SetText(String.valueOf(value));
+    _textValue.SetText(String.format("%s%s", _prefix, FloatToRoundedString(value, _decimals)));
   }
 }
 
@@ -204,8 +216,9 @@ class UIControlButton extends UIOverlappingGroup
   private UIText _textLabel;
   private UIText _textValue;
   private UIButton _button;
+  private int _decimals;
 
-  public UIControlButton(float fracW, float fracH, String label)
+  public UIControlButton(float fracW, float fracH, String label, int decimals)
   {
     super(fracW, fracH, null);
     _button = new UIButton(1.0, 1.0);
@@ -214,9 +227,13 @@ class UIControlButton extends UIOverlappingGroup
     _textGroup = new UIVerticalFracGroup(1.0, 1.0, new UIElement[] {_textLabel, _textValue});
     SetChildren(new UIElement[] {_button, _textGroup});
   }
+  public UIControlButton(float fracW, float fracH, String label)
+  {
+    this(fracW, fracH, label, 0);
+  }
 
   public void SetValue(float value)
   {
-    _textValue.SetText(String.valueOf(value));
+    _textValue.SetText(FloatToRoundedString(value, _decimals));
   }
 }
