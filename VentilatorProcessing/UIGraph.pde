@@ -3,7 +3,8 @@ class UIGraph extends UIElementRT
   private int FADE_SAMPLES_COUNT = 5;
 
   private int _sampleCount;
-  private float[] _samples;
+  private float[] _samplesValue;
+  private color[] _samplesBGColor;
   private float _rangeMinY;
   private float _rangeMaxY;
   private float _rangeHeight;
@@ -18,7 +19,8 @@ class UIGraph extends UIElementRT
   {
     super(fracW, fracH);
     _sampleCount = sampleCount;
-    _samples = new float[sampleCount];
+    _samplesValue = new float[sampleCount];
+    _samplesBGColor = new color[sampleCount];
     _rangeMinY = rangeMinY;
     _rangeMaxY = rangeMaxY;
     _colorLine = colorLine;
@@ -27,29 +29,51 @@ class UIGraph extends UIElementRT
 
   public void SetValue(float value)
   {
-    _samples[_sampleIndex] = value;
+    _samplesValue[_sampleIndex] = value;
+  }
+
+  public void SetBGColor(color bgColor)
+  {
+    _samplesBGColor[_sampleIndex] = bgColor;
   }
 
   private void NextSample()
   {
-    float currentValue = _samples[_sampleIndex];
+    float currentValue = _samplesValue[_sampleIndex];
+    color currentBGColor = _samplesBGColor[_sampleIndex];
+
     _sampleIndex += 1;
     _sampleIndex = _sampleIndex >= _sampleCount ? 0 : _sampleIndex;
-    _samples[_sampleIndex] = currentValue;
+
+    _samplesValue[_sampleIndex] = currentValue;
+    _samplesBGColor[_sampleIndex] = #1E1E1E;
   }
 
-  private float GetPrevSample()
+  private int GetPrevSampleIndex()
   {
     int i = _sampleIndex;
     i -= 1;
-    i = i < 0 ? _sampleCount - 1 : i;
-
-    return _samples[i];
+    return i < 0 ? _sampleCount - 1 : i;
   }
 
-  private float GetCurrentSample()
+  private float GetPrevValue()
   {
-    return _samples[_sampleIndex];
+    return _samplesValue[GetPrevSampleIndex()];
+  }
+
+  private float GetCurrentValue()
+  {
+    return _samplesValue[_sampleIndex];
+  }
+
+  // private color GetPrevBGColor()
+  // {
+  //   return _samplesBGColor[GetPrevSampleIndex()];
+  // }
+
+  private color GetCurrentBGColor()
+  {
+    return _samplesBGColor[_sampleIndex];
   }
 
   private float GetYPosition(float y)
@@ -87,15 +111,17 @@ class UIGraph extends UIElementRT
     for (int i = 0; i < FADE_SAMPLES_COUNT; i++)
     {
       // This does not produce a linear fade but good enough for now
-      _renderTarget.fill(30, 255 * (FADE_SAMPLES_COUNT - i) / FADE_SAMPLES_COUNT);
+      _renderTarget.fill(GetCurrentBGColor(), 255 * (FADE_SAMPLES_COUNT - i) / FADE_SAMPLES_COUNT);
       _renderTarget.rect(x1 + sampleWidth * i, 2, sampleWidth, h - 4);
+      // _renderTarget.fill(0);
+      // _renderTarget.rect();
     }
 
     if (_sampleIndex != _sampleCount - 1)
     {
       // Invert y values because Processing coordinate system 0 is top
-      float y0 = GetYPosition(GetPrevSample());
-      float y1 = GetYPosition(GetCurrentSample());
+      float y0 = GetYPosition(GetPrevValue());
+      float y1 = GetYPosition(GetCurrentValue());
       _originY = (int)GetYPosition(0);
 
       _renderTarget.noFill();
