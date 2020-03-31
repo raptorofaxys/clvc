@@ -92,7 +92,7 @@ void setup()
 
   mainGroup = new UIVerticalFracGroup(0.9, 1.0, new UIElement[] {dataGroup, controlsGroup});
 
-  trackBar = new UITrackBar(1.0, 1.0, controlButtons);
+  trackBar = new UITrackBar(1.0, 1.0, 1.0, controlButtons);
   rightGroup = new UIVerticalFracGroup(0.1, 1.0, new UIElement[] {trackBar});
 
   runtimeGroup = new UIHorizontalFracGroup(0, 0, width, height, new UIElement[] {mainGroup, rightGroup});
@@ -183,7 +183,7 @@ void UpdateSerial()
         // println("_volume: " + ms.Debug3);
         // println("Gf3: " + ms.Debug4);
         // println("Gf4: " + ms.Debug5);
-        
+
         // println("Error: " + ms.Debug1);
         // println("Error rate: " + ms.Debug4);
         // println("Correction: " + ms.Debug2);

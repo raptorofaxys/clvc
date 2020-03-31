@@ -120,7 +120,7 @@ class UIButton extends UIInteractiveElement
     fill(50);
     stroke(0);
     strokeWeight(4);
-    rect(Transform.GetX(), Transform.GetY(), Transform.GetW(), Transform.GetH(), 12);
+    rect(Transform.GetX(), Transform.GetY(), Transform.GetW(), Transform.GetH(), 12.0f);
   }
 }
 
@@ -244,21 +244,58 @@ class UIMenuButton extends UIButton
 class UITrackBar extends UIInteractiveElement
 {
   private UIRadioButtonSet _controlButtons;
+  private int _pressedY;
+  private float _pressedValue;
+  private float _trackSpeed;
+  private final float MIN_TRACK_SPEED = 0.2;
+  private final float MAX_TRACK_SPEED = 5.0;
 
-  public UITrackBar(float fracW, float fracH, UIRadioButtonSet controlButtons)
+  public UITrackBar(float fracW, float fracH, float trackSpeed, UIRadioButtonSet controlButtons)
   {
     super(fracW, fracH);
     _controlButtons = controlButtons;
+    SetTrackSpeed(trackSpeed);
+  }
+
+  protected void OnRollOver()
+  {
+    super.OnRollOver();
+    _pressedY = mouseY;
+    _pressedValue = GetControlValue();
+  }
+
+  protected void OnPress()
+  {
+    super.OnPress();
+    _pressedY = mouseY;
+    _pressedValue = GetControlValue();
+  }
+
+  public void SetTrackSpeed(float trackSpeed)
+  {
+    _trackSpeed = max(MIN_TRACK_SPEED, min(MAX_TRACK_SPEED, trackSpeed));
+  }
+
+  private float GetControlValue()
+  {
+    UIControlRadioButton b = (UIControlRadioButton)_controlButtons.GetSelectedButton();
+    return b.GetControlParent().GetValueInRange01();
+  }
+
+  private void SetControlValue(float value)
+  {
+    UIControlRadioButton b = (UIControlRadioButton)_controlButtons.GetSelectedButton();
+    b.GetControlParent().SetValueInRange01(value);
   }
 
   protected void OnHover()
   {
+    super.OnHover();
     if (appTouchScreen || _pressed)
     {
-      float value = 1.0 - (float)mouseY / height;
-      value = max(0, min(1, value * 1.1 - 0.05));
-      UIControlRadioButton b = (UIControlRadioButton)_controlButtons.GetSelectedButton();
-      b.GetControlParent().SetValueInRange01(value);
+      float deltaY = _pressedY - mouseY;
+      float value = max(0, min(1, _pressedValue + deltaY / height * _trackSpeed));
+      SetControlValue(value);
     }
   }
 

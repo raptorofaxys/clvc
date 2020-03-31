@@ -250,6 +250,10 @@ class UIControlButton extends UIOverlappingGroup
     _textValue.SetText(FloatToRoundedString(value, _decimals));
   }
 
+  public float GetValueInRange01()
+  {
+    return (GetValue() - _rangeMin) / (_rangeMax - _rangeMin);
+  }
   public void SetValueInRange01(float t)
   {
     SetValue(lerp(_rangeMin, _rangeMax, t));
