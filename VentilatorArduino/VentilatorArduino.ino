@@ -723,6 +723,11 @@ public:
         return _flowRate;
     }
 
+    float GetFlowLps()
+    {
+        return GetFlowSlpm() / 60.0f;
+    }
+
     uint32_t GetSerial() const
     {
         return _serial;
@@ -1032,8 +1037,8 @@ struct __attribute__((packed)) MachineState
     float MinuteVentilationLitersPerMin;            // L/min
     float RespiratoryFrequencyBreathsPerMin;        // breaths/min
 
-    float InhalationTidalVolume;                    // ml
-    float ExhalationTidalVolume;                    // ml
+    float InhalationTidalVolume;                    // L
+    float ExhalationTidalVolume;                    // L
 
     float PressurePeak;                             // cmH2O
     float PressureMean;                             // cmH2O
@@ -1272,6 +1277,11 @@ public:
     void TriggerWhenPossible()
     {
         _pendingTrigger = true;
+    }
+
+    bool JustTriggered() const
+    {
+        return _justTriggered;
     }
 
     long GetInspiratoryTimeMs() const
@@ -1537,6 +1547,38 @@ private:
     float _phaseTime = 0.0f;
 };
 
+template<class I2C, template<class T> class FlowSensor>
+class TotalVolumeTracker
+{
+public:
+    TotalVolumeTracker(const TriggerLogic &triggerLogic, FlowSensor<I2C> &flowSensor)
+        : _triggerLogic(triggerLogic)
+        , _flowSensor(flowSensor)
+    {
+    }
+
+    void Update(float deltaSeconds)
+    {
+        if (_triggerLogic.JustTriggered())
+        {
+            _lastVolumeL = _volumeL;
+            _volumeL = 0.0f;
+        }
+        _volumeL += _flowSensor.GetFlowLps() * deltaSeconds;
+    }
+
+    float GetVolumeL() const
+    {
+        return _lastVolumeL;
+    }
+
+private:
+    const TriggerLogic& _triggerLogic;
+    FlowSensor<I2C>& _flowSensor;
+    float _lastVolumeL = 0.0f;
+    float _volumeL = 0.0f;
+};
+
 void ProcessUIStateEvents(struct UIState& uiState, class TriggerLogic& triggerLogic)
 {
     if (uiState.BreathManuallyTriggered != 0)
@@ -1593,7 +1635,6 @@ public:
     void Update(float pressure, float deltaSeconds)
     {
         float backPressure = (_containedGasL / _capacityL) * _pressureAtCapacity;
-        globalDebugFloat1 = backPressure;
         
         float deltaPressure = pressure - backPressure;
         _flowLps = deltaPressure / kFlowResistance;
@@ -1720,6 +1761,9 @@ void loop()
     PlateauPressureTracker<InhalationPhaseTracker> plateauPressureTracker(triggerLogic, inhalationPressureSensor);
     PlateauPressureTracker<ExhalationAndRestPhaseTracker> peepPressureTracker(triggerLogic, inhalationPressureSensor);
 
+    TotalVolumeTracker<typeof(Wire), FlowSensor> totalInhalationVolumeTracker(triggerLogic, inhalationFlowSensor);
+    TotalVolumeTracker<typeof(SWire), FlowSensor> totalExhalationVolumeTracker(triggerLogic, exhalationFlowSensor);
+
 #if VIRTUAL_INPUTS
     VirtualLung lung(0.650f, 0.150f, 25.0f);
 #endif
@@ -1759,6 +1803,10 @@ void loop()
         meanPressureTracker.Update(deltaSeconds);
         plateauPressureTracker.Update(deltaSeconds);
         peepPressureTracker.Update(deltaSeconds);
+        totalInhalationVolumeTracker.Update(deltaSeconds);
+        totalExhalationVolumeTracker.Update(deltaSeconds);
+
+        float totalFlow = inhalationFlowSensor.GetFlowSlpm() - exhalationFlowSensor.GetFlowSlpm();
 
         float targetInhalationPressure = 0.0f;
         switch (uiState.ControlMode)
@@ -1824,11 +1872,11 @@ void loop()
             machineState.ExhalationFlow = exhalationFlowSensor.GetFlowSlpm();
             machineState.O2ValveOpening = o2Opening;
             machineState.AirValveOpening = airOpening;
-            machineState.TotalFlowLitersPerMin = inhalationFlowSensor.GetFlowSlpm() - exhalationFlowSensor.GetFlowSlpm();
+            machineState.TotalFlowLitersPerMin = totalFlow;
             machineState.MinuteVentilationLitersPerMin = 8.0f;
             machineState.RespiratoryFrequencyBreathsPerMin = uiState.TimerTriggerBreathsPerMin;
-            machineState.InhalationTidalVolume = 10.0f;
-            machineState.ExhalationTidalVolume = 11.0f;
+            machineState.InhalationTidalVolume = totalInhalationVolumeTracker.GetVolumeL();
+            machineState.ExhalationTidalVolume = totalExhalationVolumeTracker.GetVolumeL();
             machineState.PressurePeak = peakPressureTracker.GetPeakPressureCmH2O();
             machineState.PressureMean = meanPressureTracker.GetMeanPressureCmH2O();
             machineState.PressurePlateau = plateauPressureTracker.GetPlateauPressureCmH2O();
@@ -1855,6 +1903,8 @@ void loop()
             machineState.Debug1 = lung.GetContainedGas();
             machineState.Debug2 = lung.GetFlowSlpm();
             machineState.Debug3 = globalDebugFloat1;
+            machineState.Debug4 = globalDebugFloat2;
+            machineState.Debug5 = globalDebugFloat3;
 
             // machineState.Debug1 = error;
             // machineState.Debug2 = correction;
@@ -1867,23 +1917,13 @@ void loop()
 
             // DEFAULT_PRINT->print(nowMs);
             // DEFAULT_PRINT->print(", ");
-            // PrintFloat(targetInhalationPressure);
+            // PrintFloat(lung.GetContainedGas());
             // DEFAULT_PRINT->print(", ");
-            // PrintFloat(inhalationPressure);
+            // PrintFloat(globalDebugFloat1);
             // DEFAULT_PRINT->print(", ");
-            // PrintFloat(error);
+            // PrintFloat(globalDebugFloat2);
             // DEFAULT_PRINT->print(", ");
-            // PrintFloat(errorRate);
-            // DEFAULT_PRINT->print(", ");
-            // PrintFloat(correctionP);
-            // DEFAULT_PRINT->print(", ");
-            // PrintFloat(correctionD);
-            // DEFAULT_PRINT->print(", ");
-            // PrintFloat(correction);
-            // DEFAULT_PRINT->print(", ");
-            // PrintFloat(o2Opening);
-            // DEFAULT_PRINT->print(", ");
-            // PrintFloat(airOpening);
+            // PrintFloat(globalDebugFloat3);
             // Ln();
             
             // This will possibly skip some updates if our update loop is not running fast enough

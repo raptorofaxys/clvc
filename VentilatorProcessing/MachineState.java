@@ -25,8 +25,8 @@ class MachineState extends SerializedState
     float MinuteVentilationLitersPerMin;            // L/min
     float RespiratoryFrequencyBreathsPerMin;        // breaths/min
 
-    float InhalationTidalVolume;                    // ml
-    float ExhalationTidalVolume;                    // ml
+    float InhalationTidalVolume;                    // L
+    float ExhalationTidalVolume;                    // L
 
     float PressurePeak;                             // cmH2O
     float PressureMean;                             // cmH2O

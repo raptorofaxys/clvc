@@ -171,13 +171,17 @@ void UpdateSerial()
       if (appDebug)
       {
         println("-----");
-         println("ms.InhalationPressure: " + ms.InhalationPressure);
+        println("ms.InhalationPressure: " + ms.InhalationPressure);
         // println("Target pressure: " + ms.Debug3);
 
         // println("Tracking: " + ms.Debug1);
-        println("GasL: " + ms.Debug1);
-        println("FlowSlpm: " + ms.Debug2);
-        println("Backpressure: " + ms.Debug3);
+        // println("GasL: " + ms.Debug1);
+        // println("FlowSlpm: " + ms.Debug2);
+        // println("Backpressure: " + ms.Debug3);
+        println("InhalationTidalVolume: " + ms.InhalationTidalVolume);
+        println("just triggered: " + ms.Debug5);
+        println("tracker flow: " + ms.Debug4);
+        println("_volume: " + ms.Debug3);
         // println("Gf3: " + ms.Debug4);
         // println("Gf4: " + ms.Debug5);
         
@@ -209,8 +213,8 @@ void UpdateSerial()
       infoRR.SetValue(ms.RespiratoryFrequencyBreathsPerMin);
       infoIE.SetValue(ms.IERatio);
       infoMVe.SetValue(ms.MinuteVentilationLitersPerMin);
-      infoVTi.SetValue(ms.InhalationTidalVolume);
-      infoVTe.SetValue(ms.ExhalationTidalVolume);
+      infoVTi.SetValue(ms.InhalationTidalVolume * 1000.0f);
+      infoVTe.SetValue(ms.ExhalationTidalVolume * 1000.0f);
 
       graphPressure.SetValue(ms.InhalationPressure);
       graphPressure.SetBGColor(ms.BreathPhase == 0 ? #282828 : #1E1E1E);
