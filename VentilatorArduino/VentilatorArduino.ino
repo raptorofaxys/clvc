@@ -38,6 +38,11 @@ const int PIN_AIR_VALVE = 5;
 
 const int kMachineStateSendIntervalMs = 100;
 
+float globalDebugFloat1;
+float globalDebugFloat2;
+float globalDebugFloat3;
+float globalDebugFloat4;
+
 /////////////////////////////
 // General utilities
 /////////////////////////////
@@ -1026,6 +1031,7 @@ struct __attribute__((packed)) MachineState
     float ExhalationTidalVolume;                    // ml
 
     float PressurePeak;                             // cmH2O
+    float PressureMean;                             // cmH2O
     float PressurePlateau;                          // cmH2O
     float PressurePeep;                             // cmH2O
 
@@ -1173,6 +1179,12 @@ float HighPassFilter(float current, float target, float lastTarget, float ratePe
 {
     float t = powf(ratePerSecond, deltaSeconds);
     return (current + (target - lastTarget)) * t;
+}
+
+float HighPassFilterAbsDelta(float current, float target, float lastTarget, float ratePerSecond, float deltaSeconds)
+{
+    float t = powf(ratePerSecond, deltaSeconds);
+    return (current + abs(target - lastTarget)) * t;
 }
 
 float LinearApproach(float current, float target, float ratePerSecond, float deltaSeconds)
@@ -1343,11 +1355,11 @@ public:
 
         if (phase != _lastBreathPhase)
         {
-            if (BreathPhaseTracker::IsTrackedPhase(phase))
+            if (BreathPhaseTracker::IsTrackedPhase(phase) && !BreathPhaseTracker::IsTrackedPhase(_lastBreathPhase))
             {
-                fe.BeginTrackedPhase();
+                fe.BeginTrackedPhase(_inhalationPressureSensor.GetPressureCmH2O());
             }
-            else if (BreathPhaseTracker::IsTrackedPhase(_lastBreathPhase))
+            else if (!BreathPhaseTracker::IsTrackedPhase(phase) && BreathPhaseTracker::IsTrackedPhase(_lastBreathPhase))
             {
                 fe.EndTrackedPhase();
             }
@@ -1392,7 +1404,7 @@ public:
     {
     }
 
-    void BeginTrackedPhase()
+    void BeginTrackedPhase(float)
     {
         _peakPressure = 0.0f;
     }
@@ -1425,7 +1437,7 @@ public:
     {
     }
 
-    void BeginTrackedPhase()
+    void BeginTrackedPhase(float)
     {
         _pressureSum = 0.0f;
         _phaseTime = 0.0f;
@@ -1450,6 +1462,72 @@ public:
 private:
     float _lastMeanPressure = 0.0f;
 
+    float _pressureSum = 0.0f;
+    float _phaseTime = 0.0f;
+};
+
+template <class BreathPhaseTracker>
+class PlateauPressureTracker : public PressureTracker<BreathPhaseTracker, PlateauPressureTracker>
+{
+public:
+    PlateauPressureTracker(const TriggerLogic &triggerLogic, const PressureSensor &inhalationPressureSensor)
+        : PressureTracker<BreathPhaseTracker, PlateauPressureTracker>(triggerLogic, inhalationPressureSensor)
+    {
+    }
+
+    void BeginTrackedPhase(float pressure)
+    {
+        _lastPressure = pressure;
+        _pressureHpf = 0.0f;
+
+        _isTracking = false;
+        _seenPeak = false;
+        _pressureSum = 0.0f;
+        _phaseTime = 0.0f;
+    }
+
+    void EndTrackedPhase()
+    {
+        _lastPlateauPressure = _pressureSum / max(_phaseTime, 0.0001f);
+        _isTracking = false;
+    }
+
+    void UpdateTrackedPhase(float deltaSeconds, float pressure)
+    {
+        _pressureHpf = HighPassFilterAbsDelta(_pressureHpf, pressure, _lastPressure, 0.001f, deltaSeconds);
+        _lastPressure = pressure;
+
+        _seenPeak |= (_pressureHpf > 1.0f);
+
+        if (_seenPeak && (_pressureHpf < 1.0f))
+        {
+            _isTracking = true;
+        }
+
+        if (_isTracking)
+        {
+            _pressureSum += pressure * deltaSeconds;
+            _phaseTime += deltaSeconds;
+        }
+    }
+
+    bool IsTracking()
+    {
+        return _isTracking;
+    }
+
+    float GetPlateauPressureCmH2O() const
+    {
+        return _lastPlateauPressure;
+    }
+
+private:
+    float _lastPlateauPressure = 0.0f;
+    float _lastPressure = 0.0f;
+    float _pressureHpf = 0.0f;
+
+    bool _isTracking = false;
+    bool _seenPeak = false;
     float _pressureSum = 0.0f;
     float _phaseTime = 0.0f;
 };
@@ -1589,13 +1667,15 @@ void loop()
     TriggerLogic triggerLogic(uiState);
 
     PeakPressureTracker<InhalationPhaseTracker> peakPressureTracker(triggerLogic, inhalationPressureSensor);
-    MeanPressureTracker<InhalationPhaseTracker> plateauPressureTracker(triggerLogic, inhalationPressureSensor);
-    MeanPressureTracker<ExhalationAndRestPhaseTracker> peepPressureTracker(triggerLogic, inhalationPressureSensor);
+    MeanPressureTracker<InhalationPhaseTracker> meanPressureTracker(triggerLogic, inhalationPressureSensor);
+    PlateauPressureTracker<InhalationPhaseTracker> plateauPressureTracker(triggerLogic, inhalationPressureSensor);
+    PlateauPressureTracker<ExhalationAndRestPhaseTracker> peepPressureTracker(triggerLogic, inhalationPressureSensor);
 
     float o2Opening = 0.0f;
     float airOpening = 0.0f;
     float lastError = 0.0f;
     float lastTargetInhalationPressure = 0.0f;
+
     for (;;)
     {
         long nowMs = millis();
@@ -1620,6 +1700,7 @@ void loop()
 
         triggerLogic.Update();
         peakPressureTracker.Update(deltaSeconds);
+        meanPressureTracker.Update(deltaSeconds);
         plateauPressureTracker.Update(deltaSeconds);
         peepPressureTracker.Update(deltaSeconds);
 
@@ -1647,7 +1728,7 @@ void loop()
         lastError = error;
         
         const float kP = 0.5f;
-        const float kD = 0.05f;
+        const float kD = 0.04f;
         // const float kD = 0.0f;
 
         float correctionP = error * kP * deltaSeconds;
@@ -1693,10 +1774,12 @@ void loop()
             machineState.InhalationTidalVolume = 10.0f;
             machineState.ExhalationTidalVolume = 11.0f;
             machineState.PressurePeak = peakPressureTracker.GetPeakPressureCmH2O();
-            machineState.PressurePlateau = plateauPressureTracker.GetMeanPressureCmH2O();
-            machineState.PressurePeep = peepPressureTracker.GetMeanPressureCmH2O();
+            machineState.PressureMean = meanPressureTracker.GetMeanPressureCmH2O();
+            machineState.PressurePlateau = plateauPressureTracker.GetPlateauPressureCmH2O();
+            machineState.PressurePeep = peepPressureTracker.GetPlateauPressureCmH2O();
             machineState.EffectiveInspirationTime = uiState.InspirationTime;
             machineState.IERatio = triggerLogic.GetIERatio();
+            machineState.BreathPhase = triggerLogic.GetBreathPhase();
 
             // switch (triggerLogic.GetBreathPhase())
             // {
@@ -1705,6 +1788,12 @@ void loop()
             //     case BreathPhase::Rest: machineState.TotalFlowLitersPerMin = 0.0f; break;
             // }
             
+            // machineState.Debug1 = peepPressureTracker.IsTracking();
+            // machineState.Debug2 = gf1;
+            // machineState.Debug3 = gf2;
+            // machineState.Debug4 = gf3;
+            // machineState.Debug4 = gf4;
+
             // machineState.Debug1 = uiState.InspirationTime;
             
             // machineState.Debug1 = error;
@@ -1713,7 +1802,6 @@ void loop()
             // machineState.Debug4 = errorRate;
             // machineState.Debug5 = correctionP;
             // machineState.Debug6 = correctionD;
-            machineState.BreathPhase = triggerLogic.GetBreathPhase();
 
             SendMachineState(machineState);
 

@@ -8,7 +8,7 @@ boolean appDebug = false;
 UIMenuButton menuButton;
 UIControlButton controlFiO2, controlPEEP, controlRR, controlInspTime, controlVT, controlIP;
 UIGraph graphPressure, graphFlow, graphVolume;
-UIInfoText infoPPeak, infoPMean, infoPEEP, infoRR, infoIE, infoMVe, infoVTi, infoVTe;
+UIInfoText infoPPeak, infoPMean, infoPPlat, infoPEEP, infoRR, infoIE, infoMVe, infoVTi, infoVTe;
 UITrackBar trackBar;
 UIGroup runtimeGroup, mainGroup, dataGroup, graphGroup, infoGroup, controlsGroup, rightGroup;
 
@@ -79,13 +79,14 @@ void setup()
   // Info Panel
   infoPPeak = new UIInfoText(1.0, 1.0, "PPeak", colorPressure);
   infoPMean = new UIInfoText(1.0, 1.0, "PMean", colorPressure);
+  infoPPlat = new UIInfoText(1.0, 1.0, "PPlat", colorPressure);
   infoPEEP = new UIInfoText(1.0, 1.0, "PEEP", colorPressure);
   infoRR = new UIInfoText(1.0, 1.0, "Resp Rate", colorFlow);
   infoIE = new UIInfoText(1.0, 1.0, "I:E", colorFlow, 1, "1:");
   infoMVe = new UIInfoText(1.0, 1.0, "MVe", colorVolume, 1);
   infoVTi = new UIInfoText(1.0, 1.0, "VTi", colorVolume);
   infoVTe = new UIInfoText(1.0, 1.0, "VTe", colorVolume);
-  infoGroup = new UIVerticalFracGroup(0.2, 1.0, new UIElement[] {infoPPeak, infoPMean, infoPEEP, infoRR, infoIE, infoMVe, infoVTi, infoVTe});
+  infoGroup = new UIVerticalFracGroup(0.2, 1.0, new UIElement[] {infoPPeak, infoPMean, infoPPlat, infoPEEP, infoRR, infoIE, infoMVe, infoVTi, infoVTe});
 
   dataGroup = new UIHorizontalFracGroup(1.0, 0.8, new UIElement[] {graphGroup, infoGroup});
 
@@ -165,37 +166,44 @@ void UpdateSerial()
 
     MachineState ms = MachineState.Deserialize(bytes);
 
-    if (appDebug)
-    {
-      println("-----");
-      println("ms.InhalationPressure: " + ms.InhalationPressure);
-      // println("Target pressure: " + ms.Debug3);
-
-      // println("Error: " + ms.Debug1);
-      // println("Error rate: " + ms.Debug4);
-      // println("Correction: " + ms.Debug2);
-      // println("CorrectionP: " + ms.Debug5);
-      // println("CorrectionD: " + ms.Debug6);
-
-      // println("insp time: " + ms.Debug1);
-      // println("min insp time: " + ms.Debug2);
-      // println("phase: " + ms.Debug7);
-
-      // println("ms.O2ValveOpening: " + ms.O2ValveOpening);
-      // println("ms.AirValveOpening: " + ms.AirValveOpening);
-      // println("Raws UI recv/s: " + ms.RawUIMessagesPerSecond);
-      // println("Valid UI recv/s: " + ms.ValidUIMessagesPerSecond);
-      // println("Send/s: " + ms.MachineStateMessagesPerSecond);
-      // println("MCU last received valid: " + ms.LastReceiveValid);
-      // println("ms.TotalFlowLitersPerMin: " + ms.TotalFlowLitersPerMin);
-      // println("MCU error mask: " + Integer.toHexString(ms.ErrorMask));
-      // println("Is valid: " + ms.IsValid());
-    }
-
     if (ms.IsValid())
     {
+      if (appDebug)
+      {
+        println("-----");
+         println("ms.InhalationPressure: " + ms.InhalationPressure);
+        // println("Target pressure: " + ms.Debug3);
+
+        println("Tracking: " + ms.Debug1);
+        // println("Gf1: " + ms.Debug2);
+        println("Gf2: " + ms.Debug3);
+        // println("Gf3: " + ms.Debug4);
+        // println("Gf4: " + ms.Debug5);
+        
+        // println("Error: " + ms.Debug1);
+        // println("Error rate: " + ms.Debug4);
+        // println("Correction: " + ms.Debug2);
+        // println("CorrectionP: " + ms.Debug5);
+        // println("CorrectionD: " + ms.Debug6);
+
+        // println("insp time: " + ms.Debug1);
+        // println("min insp time: " + ms.Debug2);
+        // println("phase: " + ms.Debug7);
+
+        //  println("ms.O2ValveOpening: " + ms.O2ValveOpening);
+        // println("ms.AirValveOpening: " + ms.AirValveOpening);
+        // println("Raws UI recv/s: " + ms.RawUIMessagesPerSecond);
+        // println("Valid UI recv/s: " + ms.ValidUIMessagesPerSecond);
+        // println("Send/s: " + ms.MachineStateMessagesPerSecond);
+        // println("MCU last received valid: " + ms.LastReceiveValid);
+        // println("ms.TotalFlowLitersPerMin: " + ms.TotalFlowLitersPerMin);
+        // println("MCU error mask: " + Integer.toHexString(ms.ErrorMask));
+        // println("Is valid: " + ms.IsValid());
+      }
+
       infoPPeak.SetValue(ms.PressurePeak);
-      infoPMean.SetValue(ms.PressurePlateau);
+      infoPMean.SetValue(ms.PressureMean);
+      infoPPlat.SetValue(ms.PressurePlateau);
       infoPEEP.SetValue(ms.PressurePeep);
       infoRR.SetValue(ms.RespiratoryFrequencyBreathsPerMin);
       infoIE.SetValue(ms.IERatio);

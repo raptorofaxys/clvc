@@ -6,7 +6,7 @@ import java.util.Arrays;
 
 class MachineState extends SerializedState
 {
-    final static int kNumFloats = 27;
+    final static int kNumFloats = 28;
     final static int kNumInts = 1;
     final static int kNumChars = 0;
     final static int kNumBytes = 2;
@@ -29,6 +29,7 @@ class MachineState extends SerializedState
     float ExhalationTidalVolume;                    // ml
 
     float PressurePeak;                             // cmH2O
+    float PressureMean;                             // cmH2O
     float PressurePlateau;                          // cmH2O
     float PressurePeep;                             // cmH2O
 
@@ -101,6 +102,7 @@ class MachineState extends SerializedState
         os.ExhalationTidalVolume = bb.getFloat();
 
         os.PressurePeak = bb.getFloat();
+        os.PressureMean = bb.getFloat();
         os.PressurePlateau = bb.getFloat();
         os.PressurePeep = bb.getFloat();
 
