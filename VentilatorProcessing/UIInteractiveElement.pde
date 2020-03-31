@@ -253,10 +253,13 @@ class UITrackBar extends UIInteractiveElement
 
   protected void OnHover()
   {
-    float value = 1.0 - (float)mouseY / height;
-    value = max(0, min(1, value * 1.1 - 0.05));
-    UIControlRadioButton b = (UIControlRadioButton)_controlButtons.GetSelectedButton();
-    b.GetControlParent().SetValueInRange01(value);
+    if (appTouchScreen || _pressed)
+    {
+      float value = 1.0 - (float)mouseY / height;
+      value = max(0, min(1, value * 1.1 - 0.05));
+      UIControlRadioButton b = (UIControlRadioButton)_controlButtons.GetSelectedButton();
+      b.GetControlParent().SetValueInRange01(value);
+    }
   }
 
   public void Render()
