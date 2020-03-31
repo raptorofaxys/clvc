@@ -68,10 +68,10 @@ class UIGraph extends UIElementRT
     return _samplesValue[_sampleIndex];
   }
 
-  // private color GetPrevBGColor()
-  // {
-  //   return _samplesBGColor[GetPrevSampleIndex()];
-  // }
+  private color GetPrevBGColor()
+  {
+    return _samplesBGColor[GetPrevSampleIndex()];
+  }
 
   private color GetCurrentBGColor()
   {
@@ -113,10 +113,13 @@ class UIGraph extends UIElementRT
     for (int i = 0; i < FADE_SAMPLES_COUNT; i++)
     {
       // This does not produce a linear fade but good enough for now
-      _renderTarget.fill(GetCurrentBGColor(), 255 * (FADE_SAMPLES_COUNT - i) / FADE_SAMPLES_COUNT);
-      _renderTarget.rect(x1 + sampleWidth * i, 2, sampleWidth, h - 4);
-      // _renderTarget.fill(0);
-      // _renderTarget.rect();
+      int alpha = 255 * (FADE_SAMPLES_COUNT - i) / FADE_SAMPLES_COUNT;
+      int stepX = (int)(x1 + sampleWidth * i);
+      _renderTarget.fill(GetCurrentBGColor(), alpha);
+      _renderTarget.rect(stepX, 2, sampleWidth, h - 4);
+      _renderTarget.fill(0, alpha);
+      _renderTarget.rect(stepX, 0, sampleWidth, 2);
+      _renderTarget.rect(stepX, h - 2, sampleWidth, 2);
     }
 
     if (_sampleIndex != _sampleCount - 1)
