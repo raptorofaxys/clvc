@@ -6,6 +6,7 @@ class UIGroup extends UIElement
   public UIGroup(int x, int y, int w, int h)
   {
     super(x, y, w, h);
+    SetChildren(null);
   }
 
   public UIGroup(int x, int y, int w, int h, UIElement[] children)
@@ -27,6 +28,8 @@ class UIGroup extends UIElement
 
   public void SetChildren(UIElement[] children)
   {
+    if (children == null)
+      children = new UIElement[0];
     _children = children;
     _dirtyLayout = true;
   }
@@ -172,5 +175,24 @@ class UIOverlappingGroup extends UIGroup
     }
 
     super.UpdateChildrenLayout();
+  }
+}
+
+class UIInfoText extends UIHorizontalFracGroup
+{
+  private UIText _textLabel;
+  private UIText _textValue;
+
+  public UIInfoText(float fracW, float fracH, String label, color textColor)
+  {
+    super(fracW, fracH, null);
+    _textLabel = new UIText(1.0, 1.0, label, fontNumbers, 24, textColor, LEFT, CENTER);
+    _textValue = new UIText(1.0, 1.0, "--", fontText, 24, textColor, RIGHT, CENTER);
+    SetChildren(new UIElement[] {_textLabel, _textValue});
+  }
+
+  public void SetValue(float value)
+  {
+    _textValue.SetText(String.valueOf(value));
   }
 }
