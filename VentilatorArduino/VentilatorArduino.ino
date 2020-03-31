@@ -105,11 +105,11 @@ namespace Error
     };
 }
 
-long gErrorMask;
+long gErrorMask = 0;
 
 void RaiseError(int error) // @LAME: becaus Arduino pre-processing is a little broken for forward declarations we can't receive in Error:Type as an argument here
 {
-    gErrorMask |= (1 << error);
+    gErrorMask |= (1 << (error - 1));
 }
 
 template<typename T>
@@ -633,7 +633,7 @@ public:
         float v01 = rawValue / 1023.0f;
         return UnitSampleToPsi(v01);
 #else
-        return 0.0f;
+        return _virtualPressureReading;
 #endif
     }
 
@@ -641,6 +641,15 @@ public:
     {
         return GetPressurePsi() * kPsiToCmH2O;
     }
+
+#if VIRTUAL_INPUTS
+    void SetVirtualServoOpening(float o2Opening, float airOpening, float deltaSeconds)
+    {
+        const float kInputPsi = 1.0f;
+        float totalPsi = o2Opening * kInputPsi + airOpening * kInputPsi;
+        _virtualPressureReading = LowPassFilter(_virtualPressureReading, totalPsi, 0.0001f, deltaSeconds);
+    }
+#endif
 
 private:
     const float kPsiToCmH2O = 70.307f;
@@ -654,6 +663,10 @@ private:
     }
 
     char _pin;
+
+#if VIRTUAL_INPUTS
+    float _virtualPressureReading = 0.0f;
+#endif
 };
 
 /////////////////////////////
@@ -872,36 +885,75 @@ class ProportionalValve
 public:
 	ProportionalValve(int pin)
 	{
-		_servo.attach(pin, 500, 2350);
+		_servo.attach(pin, 550, 2300);
 	}
 
-	void SetPosition(float Position01)
+	void SetPosition01(float position01)
 	{
-		int angle = int(0 + (Position01) * 180);
+        //@TODO: map to physical valve response
+        _targetPosition = Clamp01(position01);
+		int angle = int(0 + (_position) * 90);
 		_servo.write(angle);
 	}
 
+#if VIRTUAL_INPUTS
+    void Update(float deltaSeconds)
+    {
+        _position = LinearApproach(_position, _targetPosition, 1.5f, deltaSeconds);
+    }
+    
+    float GetPosition01()
+    {
+        return _position;
+    }
+#endif
+
 private:
 	Servo _servo;
+
+#if VIRTUAL_INPUTS
+    float _targetPosition = 0.0f;
+    float _position = 0.0f;
+#endif
 };
 
 /////////////////////////////
 // Serialization and state
 /////////////////////////////
 
+namespace ControlMode
+{
+    enum Type
+    {
+        Off = 0,
+        PressureControl = 1,
+        VolumeControl = 2
+    };
+}
+
+namespace TriggerMode
+{
+    enum Type
+    {
+        Off = 0,
+        Timed = 1,
+        PatientEffort = 2
+    };
+}
+
 // This structure is designed to be zeroable in memory. The zero state should result in null operation (e.g. both valves closed, no triggering.)
 struct __attribute__((packed)) UIState
 {
     float FiO2;                                     // 0-1 ratio: 1.0 is 100% O2
     
-    uint8_t ControlMode;                            // 0: no control, 1: pressure control, 2: volume control
+    uint8_t ControlMode;                            // see ControlMode
 
     // If pressure control mode:
     float PressureControlInspiratoryPressure;       // cmH2O
 
     // If volume control mode:
     float VolumeControlMaxPressure;                 // cmH2O
-    float VolumeControlTidalVolume;                 // ml
+    float VolumeControlTidalVolume;                 // L
 
     float Peep;                                     // cmH2O
 
@@ -910,7 +962,7 @@ struct __attribute__((packed)) UIState
     float InspirationFilterRate;                    // IIR filter rate - how much error remains after one second: 0.1 means 10% of error remains after one second
     float ExpirationFilterRate;                     // IIR filter rate
 
-    uint8_t TriggerMode;                            // 0: no trigger, 1: timer, 2: patient effort (see TriggerMode enum)
+    uint8_t TriggerMode;                            // see TriggerMode
 
     int TimerTriggerBreathsPerMin;                  // breaths/min
 
@@ -957,8 +1009,8 @@ struct __attribute__((packed)) MachineState
     float ExhalationPressure;                       // cmH2O
     float ExhalationFlow;                           // L/min
 
-    float O2ValveAngle;                             // degrees
-    float AirValveAngle;                            // degrees
+    float O2ValveOpening;                           // 0-1
+    float AirValveOpening;                          // 0-1
 
     float TotalFlowLitersPerMin;                    // L/min
 
@@ -977,6 +1029,15 @@ struct __attribute__((packed)) MachineState
     float RawUIMessagesPerSecond;                   // count/s
     float ValidUIMessagesPerSecond;                 // count/s
     float MachineStateMessagesPerSecond;            // count/s
+
+    float Debug1;
+    float Debug2;
+    float Debug3;
+    float Debug4;
+    float Debug5;
+    float Debug6;
+    float Debug7;
+    float Debug8;
 
     int8_t LastReceiveValid = false;
     uint32_t ErrorMask;
@@ -1100,19 +1161,22 @@ float LowPassFilter(float current, float target, float ratePerSecond, float delt
     return target + (current - target) * t;
 }
 
+float LinearApproach(float current, float target, float ratePerSecond, float deltaSeconds)
+{
+    float signedDelta = target - current;
+    float delta = abs(signedDelta);
+
+    float maxDelta = ratePerSecond * deltaSeconds;
+    delta = min(delta, maxDelta);
+
+    delta = copysignf(delta, signedDelta);
+
+    return current + delta;
+}
+
 /////////////////////////////
 // Initialization and control loop
 /////////////////////////////
-
-namespace TriggerMode
-{
-    enum Type
-    {
-        Off = 0,
-        Timed = 1,
-        PatientEffort = 2
-    };
-}
 
 namespace BreathPhase
 {
@@ -1264,6 +1328,13 @@ void setup()
 #define ENABLE_O2_VALVE_SERVO 1
 #define ENABLE_AIR_VALVE_SERVO 1
 
+// class VirtualLung
+// {
+// public:
+
+//     float capacityMl;
+// };
+
 void loop()
 {
     // Give the UI time to boot up - @TODO: message resynchronization
@@ -1330,15 +1401,27 @@ void loop()
     Zero(machineState);
 
     TriggerLogic triggerLogic;
+
+    float o2Opening = 0.0f;
+    float airOpening = 0.0f;
+    float lastError = 0.0f;
     for (;;)
     {
         long nowMs = millis();
         float deltaSeconds = (nowMs - lastUpdateMs) / 1000.0f;
+
         lastUpdateMs = nowMs;
 
         gReceiveRawUIStateRate.Update();
         gReceiveValidUIStateRate.Update();
         gSendMachineStateRate.Update();
+
+#if VIRTUAL_INPUTS
+        o2Valve.Update(deltaSeconds);
+        airValve.Update(deltaSeconds);
+        inhalationPressureSensor.SetVirtualServoOpening(o2Valve.GetPosition01(), airValve.GetPosition01(), deltaSeconds);
+        exhalationPressureSensor.SetVirtualServoOpening(o2Valve.GetPosition01(),  airValve.GetPosition01(), deltaSeconds);
+#endif
 
         ReceiveUIState(uiState);
 
@@ -1353,8 +1436,53 @@ void loop()
             case BreathPhase::Exhalation: machineState.TotalFlowLitersPerMin = 20.0f; break;
             case BreathPhase::Rest: machineState.TotalFlowLitersPerMin = 0.0f; break;
         }
+
+        float targetInhalationPressure = 0.0f;
+        switch (uiState.ControlMode)
+        {
+            case ControlMode::Off:
+               break;
+            case ControlMode::PressureControl:
+                targetInhalationPressure = (triggerLogic.GetBreathPhase() == BreathPhase::Inhalation) ? uiState.PressureControlInspiratoryPressure : uiState.Peep;
+                break;
+            case ControlMode::VolumeControl:
+                RaiseError(Error::UnimplementedFeature);
+                break;
+        }
+
+        float inhalationPressure = inhalationPressureSensor.GetPressureCmH2O();
+
+        float error = targetInhalationPressure - inhalationPressure;
         
-        machineState.TotalFlowLitersPerMin = LowPassFilter(machineState.TotalFlowLitersPerMin, 0.0f, 0.1f, deltaSeconds);
+        float errorRate = (error - lastError) / deltaSeconds;
+        lastError = error;
+        
+        const float kP = 0.5f;
+        const float kD = 0.06f;
+
+        float correctionP = error * kP * deltaSeconds;
+        float correctionD = errorRate * kD * deltaSeconds;
+        
+        float correction = correctionP + correctionD;
+
+        // Work out relative valve openings based on FiO2
+        float o2Proportion = uiState.FiO2;
+        float airProportion = 1.0f - uiState.FiO2;
+
+        o2Opening += o2Proportion * correction;
+        airOpening += airProportion * correction;
+
+        o2Opening = Clamp01(o2Opening);
+        airOpening = Clamp01(airOpening);
+
+        //@TODO: map to physical valve response
+#if ENABLE_O2_VALVE_SERVO
+        o2Valve.SetPosition01(o2Opening);
+#endif
+
+#if ENABLE_AIR_VALVE_SERVO
+        airValve.SetPosition01(airOpening);
+#endif
 
         // float secondsSinceStart = nowMs / 1000.0f;
         // float rawSine = sin(secondsSinceStart * 2.0f) * 4.0f;
@@ -1363,12 +1491,13 @@ void loop()
 
         if (nowMs - lastSendMs > kMachineStateSendIntervalMs)
         {
-            machineState.InhalationPressure = 1.0f;
+            machineState.InhalationPressure = inhalationPressure;
             machineState.InhalationFlow = 2.0f;
             machineState.ExhalationPressure = 3.0f;
             machineState.ExhalationFlow = 4.0f;
-            machineState.O2ValveAngle = 5.0f;
-            machineState.AirValveAngle = 6.0f;
+            machineState.O2ValveOpening = o2Opening;
+            machineState.AirValveOpening = airOpening;
+            machineState.TotalFlowLitersPerMin = 7.0f;
             machineState.MinuteVentilationLitersPerMin = 8.0f;
             machineState.RespiratoryFrequencyBreathsPerMin = 9.0f;
             machineState.InhalationTidalVolume = 10.0f;
@@ -1377,6 +1506,13 @@ void loop()
             machineState.PressurePlateau = 13.0f;
             machineState.PressurePeep = 14.0f;
             machineState.IERatio = 15.0f;
+
+            machineState.Debug1 = error;
+            machineState.Debug2 = correction;
+            machineState.Debug3 = targetInhalationPressure;
+            machineState.Debug4 = errorRate;
+            machineState.Debug5 = correctionP;
+            machineState.Debug6 = correctionD;
 
             SendMachineState(machineState);
             
@@ -1435,12 +1571,12 @@ void loop()
 
 #if ENABLE_O2_VALVE_SERVO
         float o2Position = Clamp01(inhalationFlow / 16.0f);
-        o2Valve.SetPosition(o2Position);
+        o2Valve.SetPosition01(o2Position);
 #endif
 
 #if ENABLE_AIR_VALVE_SERVO
         float airPosition = Clamp01(exhalationFlow / 16.0f);
-        airValve.SetPosition(airPosition);
+        airValve.SetPosition01(airPosition);
 #endif
     }
 }

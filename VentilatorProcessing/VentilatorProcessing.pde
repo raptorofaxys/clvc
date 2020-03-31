@@ -91,13 +91,14 @@ void Update()
   UpdateSerial();
 
   float fakeVal1 = noise(millis() * 0.001) * 2.0 * 14.0 + 5.0;
-  GraphPressure.SetValue(fakeVal1);
   float fakeVal2 = (sin(millis() * TWO_PI * 0.00033) + noise(millis() * 0.002) - 0.5) * 0.5;
+  
   if (port == null)
   {
+    GraphPressure.SetValue(fakeVal1);
     GraphFlow.SetValue(fakeVal2 * 60.0);
+    GraphVolume.SetValue(max(0, fakeVal2 * 500.0));
   }
-  GraphVolume.SetValue(max(0, fakeVal2 * 500.0));
 }
 
 void Render()
@@ -120,17 +121,31 @@ void UpdateSerial()
 
     MachineState ms = MachineState.Deserialize(bytes);
 
-    println("Raws UI recv/s: " + ms.RawUIMessagesPerSecond);
-    println("Valid UI recv/s: " + ms.ValidUIMessagesPerSecond);
-    println("Send/s: " + ms.MachineStateMessagesPerSecond);
-    println("MCU last received valid: " + ms.LastReceiveValid);
-    println("ms.TotalFlowLitersPerMin: " + ms.TotalFlowLitersPerMin);
+    println("-----");
+    println("ms.InhalationPressure: " + ms.InhalationPressure);
+    println("Target pressure: " + ms.Debug3);
+
+    println("Error: " + ms.Debug1);
+    println("Error rate: " + ms.Debug4);
+    println("Correction: " + ms.Debug2);
+    println("CorrectionP: " + ms.Debug5);
+    println("CorrectionD: " + ms.Debug6);
+
+    println("ms.O2ValveOpening: " + ms.O2ValveOpening);
+    println("ms.AirValveOpening: " + ms.AirValveOpening);
+    // println("Raws UI recv/s: " + ms.RawUIMessagesPerSecond);
+    // println("Valid UI recv/s: " + ms.ValidUIMessagesPerSecond);
+    // println("Send/s: " + ms.MachineStateMessagesPerSecond);
+    // println("MCU last received valid: " + ms.LastReceiveValid);
+    // println("ms.TotalFlowLitersPerMin: " + ms.TotalFlowLitersPerMin);
     println("MCU error mask: " + Integer.toHexString(ms.ErrorMask));
     println("Is valid: " + ms.IsValid());
 
     if (ms.IsValid())
     {
-      GraphFlow.SetValue(ms.TotalFlowLitersPerMin);
+      GraphPressure.SetValue(ms.InhalationPressure);
+      GraphFlow.SetValue(ms.Debug3);
+      GraphVolume.SetValue((ms.O2ValveOpening + ms.AirValveOpening) * 300.0f);
     }
     else
     {
@@ -145,8 +160,19 @@ void UpdateSerial()
   long nowMs = millis();
   if (nowMs - lastSendMs > 33)
   {
+    uiState.FiO2 = 0.3f;
+    uiState.ControlMode = 1;
+    uiState.PressureControlInspiratoryPressure = 15.0f;
+    uiState.VolumeControlMaxPressure = 25.0f;
+    uiState.VolumeControlTidalVolume = 0.450f;
+    uiState.Peep = 5.0f;
+    uiState.InspirationTime = 1.0f;
+    uiState.InspirationFilterRate = 0.01f;
+    uiState.ExpirationFilterRate = 0.02f;
     uiState.TriggerMode = 1;
     uiState.TimerTriggerBreathsPerMin = 20;
+    uiState.PatientEffortTriggerMinBreathsPerMin = 8;
+    uiState.PatientEffortTriggerLitersPerMin = 2.5f;
 
     byte[] packet = uiState.Serialize();
     port.write(packet);

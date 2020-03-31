@@ -20,7 +20,7 @@ class UIState extends SerializedState
 
     // If volume control mode:
     float VolumeControlMaxPressure;                 // cmH2O
-    float VolumeControlTidalVolume;                 // ml
+    float VolumeControlTidalVolume;                 // L
 
     float Peep;                                     // cmH2O
 

@@ -6,7 +6,7 @@ import java.util.Arrays;
 
 class MachineState extends SerializedState
 {
-    final static int kNumFloats = 18;
+    final static int kNumFloats = 26;
     final static int kNumInts = 1;
     final static int kNumChars = 0;
     final static int kNumBytes = 1;
@@ -17,8 +17,8 @@ class MachineState extends SerializedState
     float ExhalationPressure;                       // cmH2O
     float ExhalationFlow;                           // L/min
 
-    float O2ValveAngle;                             // degrees
-    float AirValveAngle;                            // degrees
+    float O2ValveOpening;                           // degrees
+    float AirValveOpening;                          // degrees
 
     float TotalFlowLitersPerMin;                    // L/min
 
@@ -38,6 +38,15 @@ class MachineState extends SerializedState
     float ValidUIMessagesPerSecond;                 // count/s
     float MachineStateMessagesPerSecond;            // count/s
 
+    float Debug1;
+    float Debug2;
+    float Debug3;
+    float Debug4;
+    float Debug5;
+    float Debug6;
+    float Debug7;
+    float Debug8;
+    
     byte LastReceiveValid;
     int ErrorMask;
 
@@ -77,8 +86,8 @@ class MachineState extends SerializedState
         os.ExhalationPressure = bb.getFloat();
         os.ExhalationFlow  = bb.getFloat();
 
-        os.O2ValveAngle = bb.getFloat();
-        os.AirValveAngle = bb.getFloat();
+        os.O2ValveOpening = bb.getFloat();
+        os.AirValveOpening = bb.getFloat();
 
         os.TotalFlowLitersPerMin = bb.getFloat();
 
@@ -97,6 +106,15 @@ class MachineState extends SerializedState
         os.RawUIMessagesPerSecond = bb.getFloat();
         os.ValidUIMessagesPerSecond = bb.getFloat();
         os.MachineStateMessagesPerSecond = bb.getFloat();
+
+        os.Debug1 = bb.getFloat();
+        os.Debug2 = bb.getFloat();
+        os.Debug3 = bb.getFloat();
+        os.Debug4 = bb.getFloat();
+        os.Debug5 = bb.getFloat();
+        os.Debug6 = bb.getFloat();
+        os.Debug7 = bb.getFloat();
+        os.Debug8 = bb.getFloat();
 
         os.LastReceiveValid = bb.get();
         os.ErrorMask = bb.getInt();
