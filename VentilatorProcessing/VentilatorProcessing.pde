@@ -137,17 +137,19 @@ void UpdateSerial()
     MachineState ms = MachineState.Deserialize(bytes);
 
     println("-----");
-    println("ms.InhalationPressure: " + ms.InhalationPressure);
-    println("Target pressure: " + ms.Debug3);
+    // println("ms.InhalationPressure: " + ms.InhalationPressure);
+    // println("Target pressure: " + ms.Debug3);
 
-    println("Error: " + ms.Debug1);
-    println("Error rate: " + ms.Debug4);
-    println("Correction: " + ms.Debug2);
-    println("CorrectionP: " + ms.Debug5);
-    println("CorrectionD: " + ms.Debug6);
+    // println("Error: " + ms.Debug1);
+    // println("Error rate: " + ms.Debug4);
+    // println("Correction: " + ms.Debug2);
+    // println("CorrectionP: " + ms.Debug5);
+    // println("CorrectionD: " + ms.Debug6);
 
-    println("ms.O2ValveOpening: " + ms.O2ValveOpening);
-    println("ms.AirValveOpening: " + ms.AirValveOpening);
+    println("phase: " + ms.Debug7);
+
+    // println("ms.O2ValveOpening: " + ms.O2ValveOpening);
+    // println("ms.AirValveOpening: " + ms.AirValveOpening);
     // println("Raws UI recv/s: " + ms.RawUIMessagesPerSecond);
     // println("Valid UI recv/s: " + ms.ValidUIMessagesPerSecond);
     println("Send/s: " + ms.MachineStateMessagesPerSecond);
