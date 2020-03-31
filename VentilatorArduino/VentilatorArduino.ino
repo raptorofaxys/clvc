@@ -1029,6 +1029,7 @@ struct __attribute__((packed)) MachineState
     float PressurePlateau;                          // cmH2O
     float PressurePeep;                             // cmH2O
 
+    float EffectiveInspirationTime;                 // s
     float IERatio;                                  // unitless; how long expiration is compared to inspiration
 
     float RawUIMessagesPerSecond;                   // count/s
@@ -1674,6 +1675,7 @@ void loop()
             machineState.PressurePeak = peakPressureTracker.GetPeakPressureCmH2O();
             machineState.PressurePlateau = plateauPressureTracker.GetMeanPressureCmH2O();
             machineState.PressurePeep = peepPressureTracker.GetMeanPressureCmH2O();
+            machineState.EffectiveInspirationTime = uiState.InspirationTime;
             machineState.IERatio = triggerLogic.GetIERatio();
 
             // switch (triggerLogic.GetBreathPhase())

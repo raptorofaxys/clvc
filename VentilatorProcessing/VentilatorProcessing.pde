@@ -206,6 +206,13 @@ void UpdateSerial()
       graphPressure.SetValue(ms.InhalationPressure);
       graphFlow.SetValue(ms.Debug3);
       graphVolume.SetValue((ms.O2ValveOpening + ms.AirValveOpening) * 600.0f);
+
+      // Correct the inspiration time as it is limited by the controller according to other constants
+      if (ms.EffectiveInspirationTime < uiState.InspirationTime)
+      {
+        uiState.InspirationTime = ms.EffectiveInspirationTime;
+        controlInspTime.SetValue(uiState.InspirationTime);
+      }
     }
     else
     {

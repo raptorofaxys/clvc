@@ -6,7 +6,7 @@ import java.util.Arrays;
 
 class MachineState extends SerializedState
 {
-    final static int kNumFloats = 26;
+    final static int kNumFloats = 27;
     final static int kNumInts = 1;
     final static int kNumChars = 0;
     final static int kNumBytes = 1;
@@ -32,6 +32,7 @@ class MachineState extends SerializedState
     float PressurePlateau;                          // cmH2O
     float PressurePeep;                             // cmH2O
 
+    float EffectiveInspirationTime;                 // s
     float IERatio;                                  // unitless; how long expiration is compared to inspiration
 
     float RawUIMessagesPerSecond;                   // count/s
@@ -101,6 +102,7 @@ class MachineState extends SerializedState
         os.PressurePlateau = bb.getFloat();
         os.PressurePeep = bb.getFloat();
 
+        os.EffectiveInspirationTime = bb.getFloat();
         os.IERatio = bb.getFloat();
         
         os.RawUIMessagesPerSecond = bb.getFloat();
