@@ -5,13 +5,12 @@ boolean appTouchScreen = false;
 boolean appSmooth = true;
 boolean appDebug = false;
 
-UIButton b1, b2, b3, b4;
+UIMenuButton menuButton;
 UIControlButton controlFiO2, controlPEEP, controlRR, controlInspTime, controlVT, controlIP;
 UIGraph graphPressure, graphFlow, graphVolume;
 UIInfoText infoPPeak, infoPMean, infoPEEP, infoRR, infoIE, infoMVe, infoVTi, infoVTe;
 UITrackBar trackBar;
-UIElement infoPanel;
-UIGroup runtimeGroup, mainGroup, dataGroup, graphGroup, controlsGroup, rightGroup;
+UIGroup runtimeGroup, mainGroup, dataGroup, graphGroup, infoGroup, controlsGroup, rightGroup;
 
 PFont fontBold, fontSemilight;
 color colorPressure = #ffbb00;
@@ -53,15 +52,21 @@ void setup()
 
   UIElement text1, text2, text3, text4, btg, og1;
 
-  trackBar = new UITrackBar(1.0, 1.0);
-
-  b1 = new UIMenuButton(0.4, 1.0);
-  controlFiO2 = new UIControlButton(1.0, 1.0, "FiO2");
-  controlPEEP = new UIControlButton(1.0, 1.0, "PEEP");
-  controlRR = new UIControlButton(1.0, 1.0, "Resp. Rate");
-  controlInspTime = new UIControlButton(1.0, 1.0, "Insp. Time");
-  controlIP = new UIControlButton(1.0, 1.0, "Insp. Pressure");
-  controlsGroup = new UIHorizontalFracGroup(1.0, 0.2, new UIElement[] {b1, controlFiO2, controlPEEP, controlRR, controlInspTime, controlIP});
+  menuButton = new UIMenuButton(0.4, 1.0);
+  controlFiO2 = new UIControlButton(1.0, 1.0, "FiO2", 21.0, 100.0);
+  controlPEEP = new UIControlButton(1.0, 1.0, "PEEP", 0.0, 50.0);
+  controlRR = new UIControlButton(1.0, 1.0, "Resp. Rate", 4.0, 100.0);
+  controlInspTime = new UIControlButton(1.0, 1.0, "Insp. Time", 0.25, 10.0);
+  controlIP = new UIControlButton(1.0, 1.0, "Insp. Pressure", 0.0, 30.0);
+  controlsGroup = new UIHorizontalFracGroup(1.0, 0.2, new UIElement[] {menuButton, controlFiO2, controlPEEP, controlRR, controlInspTime, controlIP});
+  UIRadioButtonSet controlButtons = new UIRadioButtonSet(new UIRadioButton[]
+    {
+      controlFiO2.GetRadioButton(),
+      controlPEEP.GetRadioButton(),
+      controlRR.GetRadioButton(),
+      controlInspTime.GetRadioButton(),
+      controlIP.GetRadioButton()
+    }, 0);
 
   // Graphs
   graphPressure = new UIGraph(1.0, 1.0, 768, -1, 30, #ffbb00);
@@ -78,11 +83,13 @@ void setup()
   infoMVe = new UIInfoText(1.0, 1.0, "MVe", colorVolume, 1);
   infoVTi = new UIInfoText(1.0, 1.0, "VTi", colorVolume);
   infoVTe = new UIInfoText(1.0, 1.0, "VTe", colorVolume);
-  infoPanel = new UIVerticalFracGroup(0.2, 1.0, new UIElement[] {infoPPeak, infoPMean, infoPEEP, infoRR, infoIE, infoMVe, infoVTi, infoVTe});
+  infoGroup = new UIVerticalFracGroup(0.2, 1.0, new UIElement[] {infoPPeak, infoPMean, infoPEEP, infoRR, infoIE, infoMVe, infoVTi, infoVTe});
 
-  dataGroup = new UIHorizontalFracGroup(1.0, 0.8, new UIElement[] {graphGroup, infoPanel});
+  dataGroup = new UIHorizontalFracGroup(1.0, 0.8, new UIElement[] {graphGroup, infoGroup});
 
   mainGroup = new UIVerticalFracGroup(0.9, 1.0, new UIElement[] {dataGroup, controlsGroup});
+
+  trackBar = new UITrackBar(1.0, 1.0, controlButtons);
   rightGroup = new UIVerticalFracGroup(0.1, 1.0, new UIElement[] {trackBar});
 
   runtimeGroup = new UIHorizontalFracGroup(0, 0, width, height, new UIElement[] {mainGroup, rightGroup});
@@ -105,6 +112,8 @@ void Update()
     runtimeGroup.UpdateChildrenLayout();
   }
   //*/
+
+
   runtimeGroup.Update();
 
   UpdateSerial();
@@ -118,12 +127,24 @@ void Update()
     graphFlow.SetValue(fakeVal2 * 60.0);
     graphVolume.SetValue(max(0, fakeVal2 * 500.0));
   }
+
+  UIInteractiveUtils.Reset();
 }
 
 void Render()
 {
   background(0);
   runtimeGroup.Render();
+}
+
+void mousePressed()
+{
+  UIInteractiveUtils.MousePress();
+}
+
+void mouseReleased()
+{
+  UIInteractiveUtils.MouseRelease();
 }
 
 void UpdateSerial()
