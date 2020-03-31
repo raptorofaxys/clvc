@@ -214,7 +214,7 @@ void UpdateSerial()
   long nowMs = millis();
   if (nowMs - lastSendMs > 33)
   {
-    uiState.FiO2 = controlFiO2.GetValue();
+    uiState.FiO2 = controlFiO2.GetValue() * 0.01f;
     uiState.ControlMode = 1;
     uiState.PressureControlInspiratoryPressure = controlIP.GetValue();
     uiState.VolumeControlMaxPressure = 25.0f;
@@ -228,7 +228,7 @@ void UpdateSerial()
     uiState.PatientEffortTriggerMinBreathsPerMin = 8;
     uiState.PatientEffortTriggerLitersPerMin = 2.5f;
 
-    controlFiO2.SetValue(uiState.FiO2);
+    controlFiO2.SetValue(uiState.FiO2 * 100.0f);
     controlPEEP.SetValue(uiState.Peep);
     controlRR.SetValue(uiState.TimerTriggerBreathsPerMin);
     controlInspTime.SetValue(uiState.InspirationTime);
