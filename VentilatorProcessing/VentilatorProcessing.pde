@@ -96,7 +96,9 @@ void setup()
 
   runtimeGroup = new UIHorizontalFracGroup(0, 0, width, height, new UIElement[] {mainGroup, rightGroup});
 
-  port = new Serial(this, "COM3", 115200); // Change this to the name of your own com port - might need UI for this
+  // Put the port name you want to use in a file called "comport.txt" in this sketch's directory
+  String portName = loadStrings("comport.txt")[0];
+  port = new Serial(this, portName, 115200); // Change this to the name of your own com port - might need UI for this
 }
 
 void draw()
