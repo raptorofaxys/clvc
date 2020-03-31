@@ -6,9 +6,9 @@ import java.util.Arrays;
 
 class UIState extends SerializedState
 {
-    final static int kNumFloats = 9;
+    final static int kNumFloats = 6;
     final static int kNumInts = 0;
-    final static int kNumChars = 2;
+    final static int kNumChars = 1;
     final static int kNumBytes = 3;
 
     float FiO2;                                     // 0-1 ratio: 1.0 is 100% O2
@@ -19,8 +19,8 @@ class UIState extends SerializedState
     float PressureControlInspiratoryPressure;       // cmH2O
 
     // If volume control mode:
-    float VolumeControlMaxPressure;                 // cmH2O
-    float VolumeControlTidalVolume;                 // L
+    // float VolumeControlMaxPressure;                 // cmH2O
+    // float VolumeControlTidalVolume;                 // L
 
     float Peep;                                     // cmH2O
 
@@ -33,8 +33,8 @@ class UIState extends SerializedState
 
     char TimerTriggerBreathsPerMin;                 // breaths/min
 
-    char PatientEffortTriggerMinBreathsPerMin;      // breaths/min
-    float PatientEffortTriggerLitersPerMin;         // L/min
+    // char PatientEffortTriggerMinBreathsPerMin;      // breaths/min
+    // float PatientEffortTriggerLitersPerMin;         // L/min
 
     byte BreathManuallyTriggered;                   // 1: yes, 0:no
 
@@ -62,16 +62,16 @@ class UIState extends SerializedState
         bb.putFloat(FiO2);
         bb.put(ControlMode);
         bb.putFloat(PressureControlInspiratoryPressure);
-        bb.putFloat(VolumeControlMaxPressure);
-        bb.putFloat(VolumeControlTidalVolume);
+        // bb.putFloat(VolumeControlMaxPressure);
+        // bb.putFloat(VolumeControlTidalVolume);
         bb.putFloat(Peep);
         bb.putFloat(InspirationTime);
         bb.putFloat(InspirationFilterRate);
         bb.putFloat(ExpirationFilterRate);
         bb.put(TriggerMode);
         bb.putChar(TimerTriggerBreathsPerMin);
-        bb.putChar(PatientEffortTriggerMinBreathsPerMin);
-        bb.putFloat(PatientEffortTriggerLitersPerMin);
+        // bb.putChar(PatientEffortTriggerMinBreathsPerMin);
+        // bb.putFloat(PatientEffortTriggerLitersPerMin);
         bb.put(BreathManuallyTriggered);
 
         byte[] array = bb.array();

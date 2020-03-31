@@ -957,8 +957,8 @@ struct __attribute__((packed)) UIState
     float PressureControlInspiratoryPressure;       // cmH2O
 
     // If volume control mode:
-    float VolumeControlMaxPressure;                 // cmH2O
-    float VolumeControlTidalVolume;                 // L
+    // float VolumeControlMaxPressure;                 // cmH2O
+    // float VolumeControlTidalVolume;                 // L
 
     float Peep;                                     // cmH2O
 
@@ -971,8 +971,8 @@ struct __attribute__((packed)) UIState
 
     int TimerTriggerBreathsPerMin;                  // breaths/min
 
-    int PatientEffortTriggerMinBreathsPerMin;       // breaths/min
-    float PatientEffortTriggerLitersPerMin;         // L/min
+    // int PatientEffortTriggerMinBreathsPerMin;       // breaths/min
+    // float PatientEffortTriggerLitersPerMin;         // L/min
 
     uint8_t BreathManuallyTriggered;                // 1: yes, 0:no
 
@@ -987,8 +987,8 @@ struct __attribute__((packed)) UIState
         
         ValidateUIState(PressureControlInspiratoryPressure, 0.0f, kMaxPressure);
         
-        ValidateUIState(VolumeControlMaxPressure, 0.0f, kMaxPressure);
-        ValidateUIState(VolumeControlTidalVolume, 0.0f, 1.0f);
+        // ValidateUIState(VolumeControlMaxPressure, 0.0f, kMaxPressure);
+        // ValidateUIState(VolumeControlTidalVolume, 0.0f, 1.0f);
         
         ValidateUIState(Peep, 0.0f, kMaxPressure);
         
@@ -1001,8 +1001,8 @@ struct __attribute__((packed)) UIState
         
         ValidateUIState(TimerTriggerBreathsPerMin, 5, kMaxBreathsPerMinute);
         
-        ValidateUIState(PatientEffortTriggerMinBreathsPerMin, 0, kMaxBreathsPerMinute);
-        ValidateUIState(PatientEffortTriggerLitersPerMin, 0.0f, 5.0f);
+        // ValidateUIState(PatientEffortTriggerMinBreathsPerMin, 0, kMaxBreathsPerMinute);
+        // ValidateUIState(PatientEffortTriggerLitersPerMin, 0.0f, 5.0f);
     }
 };
 
@@ -1486,16 +1486,16 @@ void ConfigureDefaultUIState(UIState& uiState)
     uiState.FiO2 = 0.5f;
     uiState.ControlMode = 1;
     uiState.PressureControlInspiratoryPressure = 15.0f;
-    uiState.VolumeControlMaxPressure = 25.0f;
-    uiState.VolumeControlTidalVolume = 0.450f;
+    // uiState.VolumeControlMaxPressure = 25.0f;
+    // uiState.VolumeControlTidalVolume = 0.450f;
     uiState.Peep = 5.0f;
     uiState.InspirationTime = 1.0f;
     uiState.InspirationFilterRate = 0.01f;
     uiState.ExpirationFilterRate = 0.02f;
     uiState.TriggerMode = 1;
     uiState.TimerTriggerBreathsPerMin = 20;
-    uiState.PatientEffortTriggerMinBreathsPerMin = 8;
-    uiState.PatientEffortTriggerLitersPerMin = 2.5f;
+    // uiState.PatientEffortTriggerMinBreathsPerMin = 8;
+    // uiState.PatientEffortTriggerLitersPerMin = 2.5f;
 }
 
 void loop()

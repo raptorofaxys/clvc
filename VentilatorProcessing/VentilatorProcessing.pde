@@ -223,16 +223,16 @@ void UpdateSerial()
     uiState.FiO2 = controlFiO2.GetValue() * 0.01f;
     uiState.ControlMode = 1;
     uiState.PressureControlInspiratoryPressure = controlIP.GetValue();
-    uiState.VolumeControlMaxPressure = 25.0f;
-    uiState.VolumeControlTidalVolume = 0.450f;
+    // uiState.VolumeControlMaxPressure = 25.0f;
+    // uiState.VolumeControlTidalVolume = 0.450f;
     uiState.Peep = controlPEEP.GetValue();
     uiState.InspirationTime = controlInspTime.GetValue();
     uiState.InspirationFilterRate = 0.01f;
     uiState.ExpirationFilterRate = 0.02f;
     uiState.TriggerMode = 1;
     uiState.TimerTriggerBreathsPerMin = (char)controlRR.GetValue();
-    uiState.PatientEffortTriggerMinBreathsPerMin = 8;
-    uiState.PatientEffortTriggerLitersPerMin = 2.5f;
+    // uiState.PatientEffortTriggerMinBreathsPerMin = 8;
+    // uiState.PatientEffortTriggerLitersPerMin = 2.5f;
 
     controlFiO2.SetValue(uiState.FiO2 * 100.0f);
     controlPEEP.SetValue(uiState.Peep);
