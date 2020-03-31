@@ -203,6 +203,7 @@ void UpdateSerial()
     controlFiO2.SetValue(uiState.FiO2);
     controlPEEP.SetValue(uiState.Peep);
     controlRR.SetValue(uiState.TimerTriggerBreathsPerMin);
+    controlInspTime.SetValue(uiState.InspirationTime);
     controlIP.SetValue(uiState.PressureControlInspiratoryPressure);
 
     byte[] packet = uiState.Serialize();
