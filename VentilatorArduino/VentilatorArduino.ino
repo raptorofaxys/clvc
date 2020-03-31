@@ -1029,7 +1029,7 @@ struct __attribute__((packed)) MachineState
     float PressurePlateau;                          // cmH2O
     float PressurePeep;                             // cmH2O
 
-    float IERatio;                                  // unitless
+    float IERatio;                                  // unitless; how long expiration is compared to inspiration
 
     float RawUIMessagesPerSecond;                   // count/s
     float ValidUIMessagesPerSecond;                 // count/s
@@ -1215,7 +1215,7 @@ public:
 
             case TriggerMode::Timed:
                 {
-                    float desiredMs = 60000.0f / _uiState.TimerTriggerBreathsPerMin;
+                    float desiredMs = GetTimePerTriggeredBreathMs();
                     if (nowMs - _lastTriggerMs > desiredMs)
                     {
                         TriggerWhenPossible();
@@ -1256,10 +1256,20 @@ public:
         return GetInspiratoryTimeMs() * 2;
     }
 
+    float GetTimePerTriggeredBreathMs() const
+    {
+        return 60000.0f / _uiState.TimerTriggerBreathsPerMin;
+    }
+
     // After this amount of time, the patient is considered "at rest" and a breath could be manually retriggered
     long GetCompleteBreathTimeMs() const
     {
         return GetInspiratoryTimeMs() + GetExpiratoryTimeMs();
+    }
+
+    float GetIERatio() const
+    {
+        return (GetTimePerTriggeredBreathMs() - GetInspiratoryTimeMs()) / GetInspiratoryTimeMs();
     }
 
     BreathPhase::Type GetBreathPhase() const
@@ -1638,13 +1648,13 @@ void loop()
             machineState.AirValveOpening = airOpening;
             machineState.TotalFlowLitersPerMin = 7.0f;
             machineState.MinuteVentilationLitersPerMin = 8.0f;
-            machineState.RespiratoryFrequencyBreathsPerMin = 9.0f;
+            machineState.RespiratoryFrequencyBreathsPerMin = uiState.TimerTriggerBreathsPerMin;
             machineState.InhalationTidalVolume = 10.0f;
             machineState.ExhalationTidalVolume = 11.0f;
             machineState.PressurePeak = peakPressureTracker.GetPeakPressureCmH2O();
             machineState.PressurePlateau = plateauPressureTracker.GetMeanPressureCmH2O();
             machineState.PressurePeep = peepPressureTracker.GetMeanPressureCmH2O();
-            machineState.IERatio = 15.0f;
+            machineState.IERatio = triggerLogic.GetIERatio();
 
             machineState.Debug1 = error;
             machineState.Debug2 = correction;

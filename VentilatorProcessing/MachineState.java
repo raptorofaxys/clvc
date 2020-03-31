@@ -32,7 +32,7 @@ class MachineState extends SerializedState
     float PressurePlateau;                          // cmH2O
     float PressurePeep;                             // cmH2O
 
-    float IERatio;                                  // unitless
+    float IERatio;                                  // unitless; how long expiration is compared to inspiration
 
     float RawUIMessagesPerSecond;                   // count/s
     float ValidUIMessagesPerSecond;                 // count/s

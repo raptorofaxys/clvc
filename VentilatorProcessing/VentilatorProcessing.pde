@@ -196,7 +196,7 @@ void UpdateSerial()
     uiState.InspirationFilterRate = 0.01f;
     uiState.ExpirationFilterRate = 0.02f;
     uiState.TriggerMode = 1;
-    uiState.TimerTriggerBreathsPerMin = 20;
+    uiState.TimerTriggerBreathsPerMin = 15;
     uiState.PatientEffortTriggerMinBreathsPerMin = 8;
     uiState.PatientEffortTriggerLitersPerMin = 2.5f;
 
