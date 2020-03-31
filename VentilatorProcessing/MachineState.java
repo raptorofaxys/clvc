@@ -6,23 +6,25 @@ import java.util.Arrays;
 
 class MachineState extends SerializedState
 {
-    final static int kNumFloats = 28;
+    final static int kNumFloats = 25;
     final static int kNumInts = 1;
     final static int kNumChars = 0;
     final static int kNumBytes = 2;
 
-    float InhalationPressure;                       // cmH2O
-    float InhalationFlow;                           // L/min
+    float InstantInhalationPressure;                // cmH2O
+    float InstantInhalationFlow;                    // L/min
 
-    float ExhalationPressure;                       // cmH2O
-    float ExhalationFlow;                           // L/min
+    float InstantExhalationPressure;                // cmH2O
+    float InstantExhalationFlow;                    // L/min
 
-    float O2ValveOpening;                           // degrees
-    float AirValveOpening;                          // degrees
+    float InstantO2ValveOpening;                    // degrees
+    float InstantAirValveOpening;                   // degrees
 
-    float TotalFlowLitersPerMin;                    // L/min
+    float InstantTotalVolume;                       // L
+    
+    float InstantTotalFlowLitersPerMin;                    // L/min
 
-    float MinuteVentilationLitersPerMin;            // L/min
+    float MinuteExhalationLitersPerMin;             // L/min
     float RespiratoryFrequencyBreathsPerMin;        // breaths/min
 
     float InhalationTidalVolume;                    // L
@@ -36,7 +38,7 @@ class MachineState extends SerializedState
     float EffectiveInspirationTime;                 // s
     float IERatio;                                  // unitless; how long expiration is compared to inspiration
 
-    byte BreathPhase;                               // 0: Inhalation, 1: Exhalation, 2: Rest
+    byte InstantBreathPhase;                        // 0: Inhalation, 1: Exhalation, 2: Rest
 
     float RawUIMessagesPerSecond;                   // count/s
     float ValidUIMessagesPerSecond;                 // count/s
@@ -46,10 +48,6 @@ class MachineState extends SerializedState
     float Debug2;
     float Debug3;
     float Debug4;
-    float Debug5;
-    float Debug6;
-    float Debug7;
-    float Debug8;
     
     byte LastReceiveValid;
     int ErrorMask;
@@ -84,18 +82,20 @@ class MachineState extends SerializedState
 
         MachineState os = new MachineState();
 
-        os.InhalationPressure = bb.getFloat();
-        os.InhalationFlow  = bb.getFloat();
+        os.InstantInhalationPressure = bb.getFloat();
+        os.InstantInhalationFlow  = bb.getFloat();
 
-        os.ExhalationPressure = bb.getFloat();
-        os.ExhalationFlow  = bb.getFloat();
+        os.InstantExhalationPressure = bb.getFloat();
+        os.InstantExhalationFlow  = bb.getFloat();
 
-        os.O2ValveOpening = bb.getFloat();
-        os.AirValveOpening = bb.getFloat();
+        os.InstantO2ValveOpening = bb.getFloat();
+        os.InstantAirValveOpening = bb.getFloat();
 
-        os.TotalFlowLitersPerMin = bb.getFloat();
+        os.InstantTotalVolume = bb.getFloat();
 
-        os.MinuteVentilationLitersPerMin = bb.getFloat();
+        os.InstantTotalFlowLitersPerMin = bb.getFloat();
+
+        os.MinuteExhalationLitersPerMin = bb.getFloat();
         os.RespiratoryFrequencyBreathsPerMin = bb.getFloat();
 
         os.InhalationTidalVolume = bb.getFloat();
@@ -109,7 +109,7 @@ class MachineState extends SerializedState
         os.EffectiveInspirationTime = bb.getFloat();
         os.IERatio = bb.getFloat();
         
-        os.BreathPhase = bb.get();
+        os.InstantBreathPhase = bb.get();
         
         os.RawUIMessagesPerSecond = bb.getFloat();
         os.ValidUIMessagesPerSecond = bb.getFloat();
@@ -119,10 +119,6 @@ class MachineState extends SerializedState
         os.Debug2 = bb.getFloat();
         os.Debug3 = bb.getFloat();
         os.Debug4 = bb.getFloat();
-        os.Debug5 = bb.getFloat();
-        os.Debug6 = bb.getFloat();
-        os.Debug7 = bb.getFloat();
-        os.Debug8 = bb.getFloat();
 
         os.LastReceiveValid = bb.get();
         os.ErrorMask = bb.getInt();

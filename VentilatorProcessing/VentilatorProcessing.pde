@@ -73,7 +73,7 @@ void setup()
   // Graphs
   graphPressure = new UIGraph(1.0, 1.0, 768, -1, 40.0, #ffbb00);
   graphFlow = new UIGraph(1.0, 1.0, 768, -100.0, 100.0, #00ff99);
-  graphVolume = new UIGraph(1.0, 1.0, 768, -40.0, 800.0, #0099ff);
+  graphVolume = new UIGraph(1.0, 1.0, 768, -0.04, 0.8, #0099ff);
   graphGroup = new UIVerticalFracGroup(0.8, 1.0, new UIElement[] {graphPressure, graphFlow, graphVolume});
 
   // Info Panel
@@ -171,17 +171,16 @@ void UpdateSerial()
       if (appDebug)
       {
         println("-----");
-        println("ms.InhalationPressure: " + ms.InhalationPressure);
+        println("ms.InhalationPressure: " + ms.InstantInhalationPressure);
         // println("Target pressure: " + ms.Debug3);
 
         // println("Tracking: " + ms.Debug1);
         // println("GasL: " + ms.Debug1);
         // println("FlowSlpm: " + ms.Debug2);
         // println("Backpressure: " + ms.Debug3);
-        println("InhalationTidalVolume: " + ms.InhalationTidalVolume);
-        println("just triggered: " + ms.Debug5);
-        println("tracker flow: " + ms.Debug4);
-        println("_volume: " + ms.Debug3);
+        println("InstantTotalVolume: " + ms.InstantTotalVolume);
+        // println("tracker flow: " + ms.Debug4);
+        // println("_volume: " + ms.Debug3);
         // println("Gf3: " + ms.Debug4);
         // println("Gf4: " + ms.Debug5);
         
@@ -212,15 +211,15 @@ void UpdateSerial()
       infoPEEP.SetValue(ms.PressurePeep);
       infoRR.SetValue(ms.RespiratoryFrequencyBreathsPerMin);
       infoIE.SetValue(ms.IERatio);
-      infoMVe.SetValue(ms.MinuteVentilationLitersPerMin);
+      infoMVe.SetValue(ms.MinuteExhalationLitersPerMin);
       infoVTi.SetValue(ms.InhalationTidalVolume * 1000.0f);
       infoVTe.SetValue(ms.ExhalationTidalVolume * 1000.0f);
 
-      graphPressure.SetValue(ms.InhalationPressure);
-      graphPressure.SetBGColor(ms.BreathPhase == 0 ? #282828 : #1E1E1E);
+      graphPressure.SetValue(ms.InstantInhalationPressure);
+      graphPressure.SetBGColor(ms.InstantBreathPhase == 0 ? #282828 : #1E1E1E);
       // graphFlow.SetValue(ms.Debug1 * 100.0f);
-      graphFlow.SetValue(ms.TotalFlowLitersPerMin);
-      graphVolume.SetValue((ms.O2ValveOpening + ms.AirValveOpening) * 600.0f);
+      graphFlow.SetValue(ms.InstantTotalFlowLitersPerMin);
+      graphVolume.SetValue(ms.InstantTotalVolume);
 
       // Correct the inspiration time as it is limited by the controller according to other constants
       if (ms.EffectiveInspirationTime < uiState.InspirationTime)
