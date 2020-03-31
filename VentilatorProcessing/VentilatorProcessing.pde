@@ -3,6 +3,7 @@ import processing.serial.*;
 boolean appFullScreen = false;
 boolean appTouchScreen = false;
 boolean appSmooth = true;
+boolean appDebug = false;
 
 UIButton b1, b2, b3, b4;
 UIControlButton controlFiO2, controlPEEP, controlRR, controlInspTime, controlVT, controlIP;
@@ -61,9 +62,9 @@ void setup()
   controlIP = new UIControlButton(1.0, 1.0, "Insp. Pressure");
 
   // Graphs
-  graphPressure = new UIGraph(1.0, 1.0, 512, -1, 30, #ffbb00);
-  graphFlow = new UIGraph(1.0, 1.0, 512, -100.0, 100.0, #00ff99);
-  graphVolume = new UIGraph(1.0, 1.0, 512, -40.0, 800.0, #0099ff);
+  graphPressure = new UIGraph(1.0, 1.0, 768, -1, 30, #ffbb00);
+  graphFlow = new UIGraph(1.0, 1.0, 768, -100.0, 100.0, #00ff99);
+  graphVolume = new UIGraph(1.0, 1.0, 768, -40.0, 800.0, #0099ff);
   graphGroup = new UIVerticalFracGroup(0.8, 1.0, new UIElement[] {graphPressure, graphFlow, graphVolume});
 
   // Info Panel
@@ -136,27 +137,30 @@ void UpdateSerial()
 
     MachineState ms = MachineState.Deserialize(bytes);
 
-    println("-----");
-    // println("ms.InhalationPressure: " + ms.InhalationPressure);
-    // println("Target pressure: " + ms.Debug3);
+    if (appDebug)
+    {
+      println("-----");
+      // println("ms.InhalationPressure: " + ms.InhalationPressure);
+      // println("Target pressure: " + ms.Debug3);
 
-    // println("Error: " + ms.Debug1);
-    // println("Error rate: " + ms.Debug4);
-    // println("Correction: " + ms.Debug2);
-    // println("CorrectionP: " + ms.Debug5);
-    // println("CorrectionD: " + ms.Debug6);
+      // println("Error: " + ms.Debug1);
+      // println("Error rate: " + ms.Debug4);
+      // println("Correction: " + ms.Debug2);
+      // println("CorrectionP: " + ms.Debug5);
+      // println("CorrectionD: " + ms.Debug6);
 
-    println("phase: " + ms.Debug7);
+      println("phase: " + ms.Debug7);
 
-    // println("ms.O2ValveOpening: " + ms.O2ValveOpening);
-    // println("ms.AirValveOpening: " + ms.AirValveOpening);
-    // println("Raws UI recv/s: " + ms.RawUIMessagesPerSecond);
-    // println("Valid UI recv/s: " + ms.ValidUIMessagesPerSecond);
-    println("Send/s: " + ms.MachineStateMessagesPerSecond);
-    // println("MCU last received valid: " + ms.LastReceiveValid);
-    // println("ms.TotalFlowLitersPerMin: " + ms.TotalFlowLitersPerMin);
-    println("MCU error mask: " + Integer.toHexString(ms.ErrorMask));
-    println("Is valid: " + ms.IsValid());
+      // println("ms.O2ValveOpening: " + ms.O2ValveOpening);
+      // println("ms.AirValveOpening: " + ms.AirValveOpening);
+      // println("Raws UI recv/s: " + ms.RawUIMessagesPerSecond);
+      // println("Valid UI recv/s: " + ms.ValidUIMessagesPerSecond);
+      println("Send/s: " + ms.MachineStateMessagesPerSecond);
+      // println("MCU last received valid: " + ms.LastReceiveValid);
+      // println("ms.TotalFlowLitersPerMin: " + ms.TotalFlowLitersPerMin);
+      println("MCU error mask: " + Integer.toHexString(ms.ErrorMask));
+      println("Is valid: " + ms.IsValid());
+    }
 
     if (ms.IsValid())
     {
