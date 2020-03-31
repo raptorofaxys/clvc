@@ -56,7 +56,7 @@ void setup()
   controlFiO2 = new UIControlButton(1.0, 1.0, "FiO2", 21.0, 21.0, 100.0);
   controlPEEP = new UIControlButton(1.0, 1.0, "PEEP", 5.0, 0.0, 50.0);
   controlRR = new UIControlButton(1.0, 1.0, "Resp. Rate", 15.0, 4.0, 100.0);
-  controlInspTime = new UIControlButton(1.0, 1.0, "Insp. Time", 1.0, 0.25, 10.0);
+  controlInspTime = new UIControlButton(1.0, 1.0, "Insp. Time", 1.0, 0.2, 8.0, 1);
   controlIP = new UIControlButton(1.0, 1.0, "Insp. Pressure", 15.0, 0.0, 30.0);
   controlsGroup = new UIHorizontalFracGroup(1.0, 0.2, new UIElement[] {menuButton, controlFiO2, controlPEEP, controlRR, controlInspTime, controlIP});
   UIRadioButtonSet controlButtons = new UIRadioButtonSet(new UIRadioButton[]
