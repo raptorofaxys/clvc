@@ -168,7 +168,7 @@ void UpdateSerial()
     if (appDebug)
     {
       println("-----");
-      // println("ms.InhalationPressure: " + ms.InhalationPressure);
+      println("ms.InhalationPressure: " + ms.InhalationPressure);
       // println("Target pressure: " + ms.Debug3);
 
       // println("Error: " + ms.Debug1);
@@ -188,8 +188,8 @@ void UpdateSerial()
       // println("Send/s: " + ms.MachineStateMessagesPerSecond);
       // println("MCU last received valid: " + ms.LastReceiveValid);
       // println("ms.TotalFlowLitersPerMin: " + ms.TotalFlowLitersPerMin);
-      println("MCU error mask: " + Integer.toHexString(ms.ErrorMask));
-      println("Is valid: " + ms.IsValid());
+      // println("MCU error mask: " + Integer.toHexString(ms.ErrorMask));
+      // println("Is valid: " + ms.IsValid());
     }
 
     if (ms.IsValid())

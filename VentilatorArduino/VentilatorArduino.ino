@@ -649,7 +649,7 @@ public:
         float totalPsi = o2Opening * kInputPsi + airOpening * kInputPsi;
 
         _totalSeconds += deltaSeconds;
-        totalPsi *= 1.0f + sinf(_totalSeconds * 2.0f) * 0.5f;
+        totalPsi *= 1.0f + sinf(_totalSeconds * 2.0f) * 0.4f;
 
         _virtualPressureReading = LowPassFilter(_virtualPressureReading, totalPsi, 0.0001f, deltaSeconds);
     }
@@ -1602,15 +1602,13 @@ void loop()
         plateauPressureTracker.Update(deltaSeconds);
         peepPressureTracker.Update(deltaSeconds);
 
-        uiState.Peep = min(uiState.Peep, uiState.PressureControlInspiratoryPressure);
-
         float targetInhalationPressure = 0.0f;
         switch (uiState.ControlMode)
         {
             case ControlMode::Off:
                break;
             case ControlMode::PressureControl:
-                targetInhalationPressure = (triggerLogic.GetBreathPhase() == BreathPhase::Inhalation) ? uiState.PressureControlInspiratoryPressure : uiState.Peep;
+                targetInhalationPressure = (triggerLogic.GetBreathPhase() == BreathPhase::Inhalation) ? uiState.PressureControlInspiratoryPressure + uiState.Peep : uiState.Peep;
                 break;
             case ControlMode::VolumeControl:
                 RaiseError(Error::UnimplementedFeature);
@@ -1628,7 +1626,7 @@ void loop()
         lastError = error;
         
         const float kP = 0.5f;
-        const float kD = 0.03f;
+        const float kD = 0.05f;
         // const float kD = 0.0f;
 
         float correctionP = error * kP * deltaSeconds;
@@ -1724,6 +1722,7 @@ void loop()
                 // delay(40);
                 // lastSendMs = nowMs;
             }
+            delay(5);
         }
     }
 
