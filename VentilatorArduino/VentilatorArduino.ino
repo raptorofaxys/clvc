@@ -1637,7 +1637,7 @@ public:
         float backPressure = (_containedGasL / _capacityL) * _pressureAtCapacity;
         
         float deltaPressure = pressure - backPressure;
-        _flowLps = deltaPressure / kFlowResistance;
+        _flowLps = copysign(powf(abs(deltaPressure), (deltaPressure > 0.0f) ? 0.6f : 0.8f) / kFlowResistance, deltaPressure); // simulate a bit of drag
 
         _containedGasL += _flowLps * deltaSeconds;
         _containedGasL = max(_containedGasL, 0.0f);
