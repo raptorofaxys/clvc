@@ -190,6 +190,29 @@ class UIButton extends UIElement
   }
 }
 
+class UIMenuButton extends UIButton
+{
+  public UIMenuButton(float fracW, float fracH)
+  {
+    super(fracW, fracH);
+  }
+
+  public void Render()
+  {
+    super.Render();
+    int w = 28;
+    int h = 6;
+    int ySpacing = 9;
+    int x = Transform.GetX() + Transform.GetW() / 2 - w / 2;
+    int y = Transform.GetY() + Transform.GetH() / 2 - h / 2;
+    noStroke();
+    fill(100);
+    rect(x, y - ySpacing, w, h, 2);
+    rect(x, y, w, h, 2);
+    rect(x, y + ySpacing, w, h, 2);
+  }
+}
+
 class UITrackBar extends UIElement
 {
   public UITrackBar(float fracW, float fracH)
@@ -200,8 +223,7 @@ class UITrackBar extends UIElement
   public void Render()
   {
     fill(30);
-    stroke(0);
-    strokeWeight(4);
+    noStroke();
     rect(Transform.GetX(), Transform.GetY(), Transform.GetW(), Transform.GetH());
   }
 }

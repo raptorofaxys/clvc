@@ -11,7 +11,7 @@ UIGraph graphPressure, graphFlow, graphVolume;
 UIInfoText infoPPeak, infoPMean, infoPEEP, infoRR, infoIE, infoMVe, infoVTi, infoVTe;
 UITrackBar trackBar;
 UIElement infoPanel;
-UIGroup runtimeGroup, mainGroup, dataGroup, graphGroup, settingsGroup, rightGroup;
+UIGroup runtimeGroup, mainGroup, dataGroup, graphGroup, controlsGroup, rightGroup;
 
 PFont fontBold, fontSemilight;
 color colorPressure = #ffbb00;
@@ -28,7 +28,8 @@ void settings()
   if (appFullScreen)
     fullScreen(P2D);
   else
-    size(832, 520, P2D);
+    size(800, 500, P2D);
+    //size(832, 520, P2D);
 
   if (appSmooth)
     smooth();
@@ -54,12 +55,13 @@ void setup()
 
   trackBar = new UITrackBar(1.0, 1.0);
 
-  b1 = new UIButton(0.4, 1.0);
+  b1 = new UIMenuButton(0.4, 1.0);
   controlFiO2 = new UIControlButton(1.0, 1.0, "FiO2");
   controlPEEP = new UIControlButton(1.0, 1.0, "PEEP");
   controlRR = new UIControlButton(1.0, 1.0, "Resp. Rate");
   controlInspTime = new UIControlButton(1.0, 1.0, "Insp. Time");
   controlIP = new UIControlButton(1.0, 1.0, "Insp. Pressure");
+  controlsGroup = new UIHorizontalFracGroup(1.0, 0.2, new UIElement[] {b1, controlFiO2, controlPEEP, controlRR, controlInspTime, controlIP});
 
   // Graphs
   graphPressure = new UIGraph(1.0, 1.0, 768, -1, 30, #ffbb00);
@@ -79,9 +81,10 @@ void setup()
   infoPanel = new UIVerticalFracGroup(0.2, 1.0, new UIElement[] {infoPPeak, infoPMean, infoPEEP, infoRR, infoIE, infoMVe, infoVTi, infoVTe});
 
   dataGroup = new UIHorizontalFracGroup(1.0, 0.8, new UIElement[] {graphGroup, infoPanel});
-  settingsGroup = new UIHorizontalFracGroup(1.0, 0.2, new UIElement[] {controlFiO2, controlPEEP, controlRR, controlInspTime, controlIP});
-  mainGroup = new UIVerticalFracGroup(0.9, 1.0, new UIElement[] {dataGroup, settingsGroup});
+
+  mainGroup = new UIVerticalFracGroup(0.9, 1.0, new UIElement[] {dataGroup, controlsGroup});
   rightGroup = new UIVerticalFracGroup(0.1, 1.0, new UIElement[] {trackBar});
+
   runtimeGroup = new UIHorizontalFracGroup(0, 0, width, height, new UIElement[] {mainGroup, rightGroup});
 
   port = new Serial(this, "COM3", 115200); // Change this to the name of your own com port - might need UI for this
