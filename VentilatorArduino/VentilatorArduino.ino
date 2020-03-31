@@ -36,7 +36,7 @@ const int PIN_ALARM_SPEAKER = 10;
 const int PIN_O2_VALVE = 4;
 const int PIN_AIR_VALVE = 5;
 
-const int kMachineStateSendIntervalMs = 8; // around 120Hz
+const int kMachineStateSendIntervalMs = 100;
 
 /////////////////////////////
 // General utilities
@@ -209,7 +209,7 @@ EventFrequencyTracker gSendMachineStateRate;
 /////////////////////////////
 
 #define DEFAULT_PRINT (&Serial)
-#define DEFAULT_FLOAT_DECIMALS 2
+#define DEFAULT_FLOAT_DECIMALS 9
 
 void Ln(Print* p = DEFAULT_PRINT)
 {
@@ -1335,6 +1335,23 @@ void setup()
 //     float capacityMl;
 // };
 
+void ConfigureDefaultUIState(UIState& uiState)
+{
+    uiState.FiO2 = 0.5f;
+    uiState.ControlMode = 1;
+    uiState.PressureControlInspiratoryPressure = 15.0f;
+    uiState.VolumeControlMaxPressure = 25.0f;
+    uiState.VolumeControlTidalVolume = 0.450f;
+    uiState.Peep = 5.0f;
+    uiState.InspirationTime = 1.0f;
+    uiState.InspirationFilterRate = 0.01f;
+    uiState.ExpirationFilterRate = 0.02f;
+    uiState.TriggerMode = 1;
+    uiState.TimerTriggerBreathsPerMin = 20;
+    uiState.PatientEffortTriggerMinBreathsPerMin = 8;
+    uiState.PatientEffortTriggerLitersPerMin = 2.5f;
+}
+
 void loop()
 {
     // Give the UI time to boot up - @TODO: message resynchronization
@@ -1344,29 +1361,29 @@ void loop()
     // }
 
 #if ENABLE_INHALATION_PRESSURE_SENSOR
-    DEFAULT_PRINT->print(F("Initializing inhalation pressure sensor...")); Ln();
+    // DEFAULT_PRINT->print(F("Initializing inhalation pressure sensor...")); Ln();
     PressureSensor inhalationPressureSensor(PIN_INHALE_PRESSURE_SENSOR);
 #endif
 
 #if ENABLE_EXHALATION_PRESSURE_SENSOR
-    DEFAULT_PRINT->print(F("Initializing exhalation pressure sensor...")); Ln();
+    // DEFAULT_PRINT->print(F("Initializing exhalation pressure sensor...")); Ln();
     PressureSensor exhalationPressureSensor(PIN_EXHALE_PRESSURE_SENSOR);
 #endif
 
 #if ENABLE_INHALATION_FLOW_SENSOR
-    DEFAULT_PRINT->print(F("Initializing inhalation flow sensor (hardware I2C)...")); Ln();
+    // DEFAULT_PRINT->print(F("Initializing inhalation flow sensor (hardware I2C)...")); Ln();
     FlowSensor<typeof(Wire)> inhalationFlowSensor(Wire);
-    DEFAULT_PRINT->print(F("Inhalation serial: 0x"));
-    PrintHex32(inhalationFlowSensor.GetSerial());
-    Ln();
+    // DEFAULT_PRINT->print(F("Inhalation serial: 0x"));
+    // PrintHex32(inhalationFlowSensor.GetSerial());
+    // Ln();
 #endif
 
 #if ENABLE_EXHALATION_FLOW_SENSOR
-    DEFAULT_PRINT->print(F("Initializing exhalation flow sensor (software I2C)...")); Ln();
+    // DEFAULT_PRINT->print(F("Initializing exhalation flow sensor (software I2C)...")); Ln();
     FlowSensor<typeof(SWire)> exhalationFlowSensor(SWire);
-    DEFAULT_PRINT->print(F("Exhalation serial: 0x"));
-    PrintHex32(exhalationFlowSensor.GetSerial());
-    Ln();
+    // DEFAULT_PRINT->print(F("Exhalation serial: 0x"));
+    // PrintHex32(exhalationFlowSensor.GetSerial());
+    // Ln();
 #endif
 
 #if ENABLE_HUMIDITY_TEMPERATURE_SENSOR
@@ -1397,6 +1414,8 @@ void loop()
 
     UIState uiState;
     Zero(uiState);
+    ConfigureDefaultUIState(uiState);
+    
     MachineState machineState;
     Zero(machineState);
 
@@ -1405,6 +1424,7 @@ void loop()
     float o2Opening = 0.0f;
     float airOpening = 0.0f;
     float lastError = 0.0f;
+    float lastTargetInhalationPressure = 0.0f;
     for (;;)
     {
         long nowMs = millis();
@@ -1450,15 +1470,19 @@ void loop()
                 break;
         }
 
+        float deltaTargetInhalationPressure = targetInhalationPressure - lastTargetInhalationPressure;
+        lastTargetInhalationPressure = targetInhalationPressure;
+
         float inhalationPressure = inhalationPressureSensor.GetPressureCmH2O();
 
         float error = targetInhalationPressure - inhalationPressure;
         
-        float errorRate = (error - lastError) / deltaSeconds;
+        float errorRate = (error - lastError - deltaTargetInhalationPressure) / deltaSeconds;
         lastError = error;
         
         const float kP = 0.5f;
-        const float kD = 0.06f;
+        const float kD = 0.03f;
+        // const float kD = 0.0f;
 
         float correctionP = error * kP * deltaSeconds;
         float correctionD = errorRate * kD * deltaSeconds;
@@ -1489,7 +1513,7 @@ void loop()
         // rawSine = Clamp(rawSine, -1.0f, 1.0f) * 50.0f;
         // lpf = LowPassFilter(lpf, rawSine, 0.05f, );
 
-        if (nowMs - lastSendMs > kMachineStateSendIntervalMs)
+        // if (nowMs - lastSendMs > kMachineStateSendIntervalMs)
         {
             machineState.InhalationPressure = inhalationPressure;
             machineState.InhalationFlow = 2.0f;
@@ -1515,9 +1539,34 @@ void loop()
             machineState.Debug6 = correctionD;
 
             SendMachineState(machineState);
+
+            // DEFAULT_PRINT->print(nowMs);
+            // DEFAULT_PRINT->print(", ");
+            // PrintFloat(targetInhalationPressure);
+            // DEFAULT_PRINT->print(", ");
+            // PrintFloat(inhalationPressure);
+            // DEFAULT_PRINT->print(", ");
+            // PrintFloat(error);
+            // DEFAULT_PRINT->print(", ");
+            // PrintFloat(errorRate);
+            // DEFAULT_PRINT->print(", ");
+            // PrintFloat(correctionP);
+            // DEFAULT_PRINT->print(", ");
+            // PrintFloat(correctionD);
+            // DEFAULT_PRINT->print(", ");
+            // PrintFloat(correction);
+            // DEFAULT_PRINT->print(", ");
+            // PrintFloat(o2Opening);
+            // DEFAULT_PRINT->print(", ");
+            // PrintFloat(airOpening);
+            // Ln();
             
             // This will possibly skip some updates if our update loop is not running fast enough
-            lastSendMs = nowMs;
+            // if (nowMs - lastSendMs > kMachineStateSendIntervalMs)
+            {
+                // delay(40);
+                lastSendMs = nowMs;
+            }
         }
     }
 

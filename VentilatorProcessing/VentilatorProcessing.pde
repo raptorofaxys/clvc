@@ -150,7 +150,7 @@ void UpdateSerial()
     println("ms.AirValveOpening: " + ms.AirValveOpening);
     // println("Raws UI recv/s: " + ms.RawUIMessagesPerSecond);
     // println("Valid UI recv/s: " + ms.ValidUIMessagesPerSecond);
-    // println("Send/s: " + ms.MachineStateMessagesPerSecond);
+    println("Send/s: " + ms.MachineStateMessagesPerSecond);
     // println("MCU last received valid: " + ms.LastReceiveValid);
     // println("ms.TotalFlowLitersPerMin: " + ms.TotalFlowLitersPerMin);
     println("MCU error mask: " + Integer.toHexString(ms.ErrorMask));
