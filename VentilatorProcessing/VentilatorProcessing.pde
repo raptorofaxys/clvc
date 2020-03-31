@@ -5,14 +5,14 @@ boolean appTouchScreen = false;
 boolean appSmooth = true;
 
 UIButton b1, b2, b3, b4;
-UIControlButton controlFiO2, controlPEEP, controlRR, controlVT, controlIP;
+UIControlButton controlFiO2, controlPEEP, controlRR, controlInspTime, controlVT, controlIP;
 UIGraph graphPressure, graphFlow, graphVolume;
 UIInfoText infoPPeak, infoPMean, infoPEEP, infoRR, infoIE, infoMVe, infoVTi, infoVTe;
 UITrackBar trackBar;
 UIElement infoPanel;
 UIGroup runtimeGroup, mainGroup, dataGroup, graphGroup, settingsGroup, rightGroup;
 
-PFont fontText, fontNumbers;
+PFont fontBold, fontSemilight;
 color colorPressure = #ffbb00;
 color colorFlow = #00ff99;
 color colorVolume = #0099ff;
@@ -46,16 +46,18 @@ void setup()
     noCursor();
   }
 
-  fontText = loadFont("SegoeUI_Bold_64.vlw");
-  fontNumbers = loadFont("SegoeUI_Semilight_64.vlw");
+  fontBold = loadFont("SegoeUI_Bold_128.vlw");
+  fontSemilight = loadFont("SegoeUI_Semilight_128.vlw");
 
   UIElement text1, text2, text3, text4, btg, og1;
 
   trackBar = new UITrackBar(1.0, 1.0);
 
+  b1 = new UIButton(0.4, 1.0);
   controlFiO2 = new UIControlButton(1.0, 1.0, "FiO2");
   controlPEEP = new UIControlButton(1.0, 1.0, "PEEP");
   controlRR = new UIControlButton(1.0, 1.0, "Resp. Rate");
+  controlInspTime = new UIControlButton(1.0, 1.0, "Insp. Time");
   controlIP = new UIControlButton(1.0, 1.0, "Insp. Pressure");
 
   // Graphs
@@ -76,7 +78,7 @@ void setup()
   infoPanel = new UIVerticalFracGroup(0.2, 1.0, new UIElement[] {infoPPeak, infoPMean, infoPEEP, infoRR, infoIE, infoMVe, infoVTi, infoVTe});
 
   dataGroup = new UIHorizontalFracGroup(1.0, 0.8, new UIElement[] {graphGroup, infoPanel});
-  settingsGroup = new UIHorizontalFracGroup(1.0, 0.2, new UIElement[] {controlFiO2, controlPEEP, controlRR, controlIP});
+  settingsGroup = new UIHorizontalFracGroup(1.0, 0.2, new UIElement[] {controlFiO2, controlPEEP, controlRR, controlInspTime, controlIP});
   mainGroup = new UIVerticalFracGroup(0.9, 1.0, new UIElement[] {dataGroup, settingsGroup});
   rightGroup = new UIVerticalFracGroup(0.1, 1.0, new UIElement[] {trackBar});
   runtimeGroup = new UIHorizontalFracGroup(0, 0, width, height, new UIElement[] {mainGroup, rightGroup});
