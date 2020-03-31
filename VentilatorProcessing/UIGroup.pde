@@ -30,6 +30,7 @@ class UIGroup extends UIElement
   {
     if (children == null)
       children = new UIElement[0];
+    // TODO: validate that no child is null
     _children = children;
     _dirtyLayout = true;
   }
@@ -189,6 +190,29 @@ class UIInfoText extends UIHorizontalFracGroup
     _textLabel = new UIText(1.0, 1.0, label, fontNumbers, 24, textColor, LEFT, CENTER);
     _textValue = new UIText(1.0, 1.0, "--", fontText, 24, textColor, RIGHT, CENTER);
     SetChildren(new UIElement[] {_textLabel, _textValue});
+  }
+
+  public void SetValue(float value)
+  {
+    _textValue.SetText(String.valueOf(value));
+  }
+}
+
+class UIControlButton extends UIOverlappingGroup
+{
+  private UIVerticalFracGroup _textGroup;
+  private UIText _textLabel;
+  private UIText _textValue;
+  private UIButton _button;
+
+  public UIControlButton(float fracW, float fracH, String label)
+  {
+    super(fracW, fracH, null);
+    _button = new UIButton(1.0, 1.0);
+    _textLabel = new UIText(1.0, 0.4, label, fontText, 24, 100, CENTER, CENTER);
+    _textValue = new UIText(1.0, 0.6, "--", fontNumbers, 64, 255, CENTER, TOP);
+    _textGroup = new UIVerticalFracGroup(1.0, 1.0, new UIElement[] {_textLabel, _textValue});
+    SetChildren(new UIElement[] {_button, _textGroup});
   }
 
   public void SetValue(float value)
