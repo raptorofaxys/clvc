@@ -96,9 +96,17 @@ class UIInteractiveElement extends UIElement
         OnRelease();
       }
     }
-    else if (UIInteractiveUtils.GetMouseReleasedThisFrame())
+    else
     {
-      _pressed = false;
+      if (_over)
+      {
+        OnRollOut();
+      }
+
+      if (UIInteractiveUtils.GetMouseReleasedThisFrame())
+      {
+        _pressed = false;
+      }
     }
   }
 }
