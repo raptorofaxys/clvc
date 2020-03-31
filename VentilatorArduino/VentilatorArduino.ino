@@ -728,6 +728,13 @@ public:
         return _serial;
     }
 
+#if VIRTUAL_INPUTS
+    void SetVirtualLungFlow(float flow, bool isInhalationSensor)
+    {
+        _flowRate = (isInhalationSensor ? max(flow, 0.0f) : max(-flow, 0.0f));
+    }
+#endif
+
 private:
     const int kI2cAddress = 0x49;
     const float kMaxSlpm = 15.0f;
@@ -750,8 +757,6 @@ private:
 #if !VIRTUAL_INPUTS
             uint16_t rawValue = ReadTwoBytes();
             _flowRate = kMaxSlpm * ((float(rawValue) / 16384) - 0.1f) / 0.8f;
-#else
-            _flowRate = 0.0f;
 #endif
 
             _lastUpdateMs = nowMs;
@@ -1581,7 +1586,7 @@ public:
         : _capacityL(capacityL)
         , _containedGasL(startingGasL)
         , _pressureAtCapacity(pressureAtCapacity)
-        , _flow(0.0f)
+        , _flowLps(0.0f)
     {
     }
 
@@ -1591,9 +1596,9 @@ public:
         globalDebugFloat1 = backPressure;
         
         float deltaPressure = pressure - backPressure;
-        _flow = deltaPressure / kFlowResistance;
+        _flowLps = deltaPressure / kFlowResistance;
 
-        _containedGasL += _flow * deltaSeconds;
+        _containedGasL += _flowLps * deltaSeconds;
         _containedGasL = max(_containedGasL, 0.0f);
     }
 
@@ -1602,20 +1607,25 @@ public:
         return _containedGasL;
     }
 
-    float GetFlow()
+    float GetFlowLps()
     {
-        return _flow;
+        return _flowLps;
+    }
+
+    float GetFlowSlpm()
+    {
+        return _flowLps * 60.0f;
     }
 
 private:
-    const float kFlowResistance = 10.0f;
+    const float kFlowResistance = 8.0f;
 
     float _capacityL;
     float _containedGasL;
 
     float _pressureAtCapacity;
 
-    float _flow;
+    float _flowLps;
 };
 #endif
 
@@ -1736,6 +1746,8 @@ void loop()
         inhalationPressureSensor.SetVirtualServoOpening(o2Valve.GetPosition01(), airValve.GetPosition01(), deltaSeconds);
         exhalationPressureSensor.SetVirtualServoOpening(o2Valve.GetPosition01(),  airValve.GetPosition01(), deltaSeconds);
         lung.Update(inhalationPressureSensor.GetPressureCmH2O(), deltaSeconds);
+        inhalationFlowSensor.SetVirtualLungFlow(lung.GetFlowSlpm(), true);
+        exhalationFlowSensor.SetVirtualLungFlow(lung.GetFlowSlpm(), false);
 #endif
 
         ReceiveUIState(uiState);
@@ -1806,13 +1818,13 @@ void loop()
 
         // if (nowMs - lastSendMs > kMachineStateSendIntervalMs)
         {
-            machineState.InhalationPressure = inhalationPressure;
-            machineState.InhalationFlow = 2.0f;
-            machineState.ExhalationPressure = 3.0f;
-            machineState.ExhalationFlow = 4.0f;
+            machineState.InhalationPressure = inhalationPressureSensor.GetPressureCmH2O();
+            machineState.InhalationFlow = inhalationFlowSensor.GetFlowSlpm();
+            machineState.ExhalationPressure = exhalationPressureSensor.GetPressureCmH2O();
+            machineState.ExhalationFlow = exhalationFlowSensor.GetFlowSlpm();
             machineState.O2ValveOpening = o2Opening;
             machineState.AirValveOpening = airOpening;
-            machineState.TotalFlowLitersPerMin = 7.0f;
+            machineState.TotalFlowLitersPerMin = inhalationFlowSensor.GetFlowSlpm() - exhalationFlowSensor.GetFlowSlpm();
             machineState.MinuteVentilationLitersPerMin = 8.0f;
             machineState.RespiratoryFrequencyBreathsPerMin = uiState.TimerTriggerBreathsPerMin;
             machineState.InhalationTidalVolume = 10.0f;
@@ -1841,7 +1853,7 @@ void loop()
             // machineState.Debug1 = uiState.InspirationTime;
             
             machineState.Debug1 = lung.GetContainedGas();
-            machineState.Debug2 = lung.GetFlow();
+            machineState.Debug2 = lung.GetFlowSlpm();
             machineState.Debug3 = globalDebugFloat1;
 
             // machineState.Debug1 = error;

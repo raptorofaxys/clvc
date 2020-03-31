@@ -71,7 +71,7 @@ void setup()
     }, 0);
 
   // Graphs
-  graphPressure = new UIGraph(1.0, 1.0, 768, -1, 30, #ffbb00);
+  graphPressure = new UIGraph(1.0, 1.0, 768, -1, 40.0, #ffbb00);
   graphFlow = new UIGraph(1.0, 1.0, 768, -100.0, 100.0, #00ff99);
   graphVolume = new UIGraph(1.0, 1.0, 768, -40.0, 800.0, #0099ff);
   graphGroup = new UIVerticalFracGroup(0.8, 1.0, new UIElement[] {graphPressure, graphFlow, graphVolume});
@@ -176,7 +176,7 @@ void UpdateSerial()
 
         // println("Tracking: " + ms.Debug1);
         println("GasL: " + ms.Debug1);
-        println("FlowL: " + ms.Debug2);
+        println("FlowSlpm: " + ms.Debug2);
         println("Backpressure: " + ms.Debug3);
         // println("Gf3: " + ms.Debug4);
         // println("Gf4: " + ms.Debug5);
@@ -214,7 +214,8 @@ void UpdateSerial()
 
       graphPressure.SetValue(ms.InhalationPressure);
       graphPressure.SetBGColor(ms.BreathPhase == 0 ? #282828 : #1E1E1E);
-      graphFlow.SetValue(ms.Debug1 * 100.0f);
+      // graphFlow.SetValue(ms.Debug1 * 100.0f);
+      graphFlow.SetValue(ms.TotalFlowLitersPerMin);
       graphVolume.SetValue((ms.O2ValveOpening + ms.AirValveOpening) * 600.0f);
 
       // Correct the inspiration time as it is limited by the controller according to other constants
