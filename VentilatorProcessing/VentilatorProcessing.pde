@@ -27,8 +27,8 @@ void settings()
   if (appFullScreen)
     fullScreen(P2D);
   else
-    size(800, 500, P2D);
-    //size(832, 520, P2D);
+    //size(800, 500, P2D);
+    size(832, 520, P2D);
 
   if (appSmooth)
     smooth();
