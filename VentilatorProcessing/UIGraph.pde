@@ -1,6 +1,6 @@
 class UIGraph extends UIElementRT
 {
-  private int FADE_SAMPLES_COUNT = 5;
+  final private int FADE_SAMPLES_COUNT = 5;
 
   private int _sampleCount;
   private float[] _samplesValue;
@@ -11,9 +11,9 @@ class UIGraph extends UIElementRT
   private color _colorLine;
   private color _colorDot;
   private int _sampleIndex;
-  private int _currentX;
-  private int _currentY;
-  private int _originY;
+  private float _currentX;
+  private float _currentY;
+  private float _originY;
 
   public UIGraph(float fracW, float fracH, int sampleCount, float rangeMinY, float rangeMaxY, color colorLine)
   {
@@ -80,6 +80,7 @@ class UIGraph extends UIElementRT
 
   private float GetYPosition(float y)
   {
+    // Invert y values because Processing coordinate system 0 is top
     return Transform.GetH() - (y - _rangeMinY) * _rangeHeight;
   }
 
@@ -105,7 +106,7 @@ class UIGraph extends UIElementRT
     int y = Transform.GetY();
     int w = Transform.GetW();
     int h = Transform.GetH();
-    float sampleWidth = (float)w / (float)_sampleCount;
+    float sampleWidth = (float)w / _sampleCount;
 
     float x1 = _sampleIndex * sampleWidth;
     float x0 = x1 - sampleWidth;
@@ -114,27 +115,26 @@ class UIGraph extends UIElementRT
     {
       // This does not produce a linear fade but good enough for now
       int alpha = 255 * (FADE_SAMPLES_COUNT - i) / FADE_SAMPLES_COUNT;
-      int stepX = (int)(x1 + sampleWidth * i);
+      float stepX = x1 + sampleWidth * i;
       _renderTarget.fill(GetCurrentBGColor(), alpha);
-      _renderTarget.rect(stepX, 2, sampleWidth, h - 4);
-      _renderTarget.fill(0, alpha);
-      _renderTarget.rect(stepX, 0, sampleWidth, 2);
-      _renderTarget.rect(stepX, h - 2, sampleWidth, 2);
+      _renderTarget.rect(stepX, 2.0f, sampleWidth, h - 4.0f);
+      _renderTarget.fill(0.0f, alpha);
+      _renderTarget.rect(stepX, 0.0f, sampleWidth, 2.0f);
+      _renderTarget.rect(stepX, h - 2.0f, sampleWidth, 2.0f);
     }
 
     if (_sampleIndex != _sampleCount - 1)
     {
-      // Invert y values because Processing coordinate system 0 is top
       float y0 = GetYPosition(GetPrevValue());
       float y1 = GetYPosition(GetCurrentValue());
-      _originY = (int)GetYPosition(0);
+      _originY = GetYPosition(0);
 
       _renderTarget.noFill();
       _renderTarget.stroke(_colorLine);
-      _renderTarget.strokeWeight(1);
-      _currentX = (int)x1;
-      _currentY = (int)y1;
-      _renderTarget.line((int)x0, (int)y0, _currentX, _currentY);
+      _renderTarget.strokeWeight(1.5f);
+      _currentX = x1;
+      _currentY = y1;
+      _renderTarget.line(x0, y0, x1, y1);
     }
   }
 
@@ -145,10 +145,10 @@ class UIGraph extends UIElementRT
     int y = Transform.GetY();
     noFill();
     stroke(90);
-    strokeWeight(0.5);
-    line(0, _originY + y, Transform.GetW(), _originY + y);
+    strokeWeight(0.5f);
+    line(0.0f, _originY + y, Transform.GetW(), _originY + y);
     fill(_colorDot);
     noStroke();
-    circle(_currentX + x, _currentY + y, 5);
+    circle(_currentX + x, _currentY + y, 5.0f);
   }
 }
