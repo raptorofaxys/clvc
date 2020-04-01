@@ -306,7 +306,7 @@ class UITrackBar extends UIInteractiveElement
   protected void OnHover()
   {
     super.OnHover();
-    if (appTouchScreen || _pressed)
+    if (_pressed)
     {
       float deltaY = _pressedY - mouseY;
       float value = max(0, min(1, _pressedValue + deltaY / height * _trackSpeed));
