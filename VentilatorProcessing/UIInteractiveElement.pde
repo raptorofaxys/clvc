@@ -113,6 +113,8 @@ class UIInteractiveElement extends UIElement
 
 class UIButton extends UIInteractiveElement
 {
+  protected color _colorFill = 40;
+
   public UIButton(float fracW, float fracH)
   {
     super(fracW, fracH);
@@ -125,7 +127,7 @@ class UIButton extends UIInteractiveElement
 
   public void Render()
   {
-    fill(50);
+    fill(_colorFill);
     stroke(0);
     strokeWeight(4);
     rect(Transform.GetX(), Transform.GetY(), Transform.GetW(), Transform.GetH(), 12.0f);
@@ -156,8 +158,17 @@ class UIRadioButton extends UIButton
       _set.SelectID(_id);
   }
 
-  public void Select() {}
-  public void UnSelect() {}
+  public void Select()
+  {
+    _selected = true;
+    _colorFill = 55;
+  }
+
+  public void UnSelect()
+  {
+    _selected = false;
+    _colorFill = 40;
+  }
 }
 
 class UIControlRadioButton extends UIRadioButton
@@ -206,13 +217,9 @@ class UIRadioButtonSet
         for (int i = 0; i < _radioButtons.length; i++)
         {
           if (i == id)
-          {
-            _radioButtons[i].UnSelect();
-          }
-          else
-          {
             _radioButtons[i].Select();
-          }
+          else
+            _radioButtons[i].UnSelect();
         }
         _selectedID = id;
       }
