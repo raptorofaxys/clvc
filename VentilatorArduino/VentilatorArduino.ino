@@ -1218,7 +1218,7 @@ float LinearApproach(float current, float target, float ratePerSecond, float del
 }
 
 /////////////////////////////
-// Initialization and control loop
+// Breath timing logic
 /////////////////////////////
 
 namespace BreathPhase
@@ -1358,6 +1358,10 @@ private:
     long _lastTriggerMs = 0;
     bool _justTriggered = false;
 };
+
+/////////////////////////////
+// Metric trackers
+/////////////////////////////
 
 template <class BreathPhaseTracker, template <class U> class FeatureExtractor>
 class PressureTracker
@@ -1588,46 +1592,10 @@ private:
     float _volumeL = 0.0f;
 };
 
-void ProcessUIStateEvents(struct UIState& uiState, class TriggerLogic& triggerLogic)
-{
-    if (uiState.BreathManuallyTriggered != 0)
-    {
-        triggerLogic.TriggerWhenPossible();
-        uiState.BreathManuallyTriggered = 0;
-    }
-}
 
-#if !VIRTUAL_INPUTS
-SoftwareWire SWire(PIN_SOFTWARE_I2C_SDA, PIN_SOFTWARE_I2C_SCL);
-#else
-EmptyPlaceholderType Wire;
-EmptyPlaceholderType SWire;
-#endif
-
-void setup()
-{
-    pinMode(13, OUTPUT);
-
-#if !VIRTUAL_INPUTS
-    Wire.begin();
-    Wire.setClock(100000);
-    SWire.begin();
-    SWire.setClock(100000);
-#endif
-
-    Serial.begin(115200);
-    while (!Serial);
-}
-
-#define ENABLE_INHALATION_PRESSURE_SENSOR 1
-#define ENABLE_EXHALATION_PRESSURE_SENSOR 1
-#define ENABLE_INHALATION_FLOW_SENSOR 1
-#define ENABLE_EXHALATION_FLOW_SENSOR 1
-#define ENABLE_HUMIDITY_TEMPERATURE_SENSOR 0
-
-#define ENABLE_ALARM 1
-#define ENABLE_O2_VALVE_SERVO 1
-#define ENABLE_AIR_VALVE_SERVO 1
+/////////////////////////////
+// Virtual lung simulation
+/////////////////////////////
 
 #if VIRTUAL_INPUTS
 class VirtualLung
@@ -1678,6 +1646,51 @@ private:
     float _flowLps;
 };
 #endif
+
+/////////////////////////////
+// Initialization and control loop
+/////////////////////////////
+
+void ProcessUIStateEvents(struct UIState& uiState, class TriggerLogic& triggerLogic)
+{
+    if (uiState.BreathManuallyTriggered != 0)
+    {
+        triggerLogic.TriggerWhenPossible();
+        uiState.BreathManuallyTriggered = 0;
+    }
+}
+
+#if !VIRTUAL_INPUTS
+SoftwareWire SWire(PIN_SOFTWARE_I2C_SDA, PIN_SOFTWARE_I2C_SCL);
+#else
+EmptyPlaceholderType Wire;
+EmptyPlaceholderType SWire;
+#endif
+
+void setup()
+{
+    pinMode(13, OUTPUT);
+
+#if !VIRTUAL_INPUTS
+    Wire.begin();
+    Wire.setClock(100000);
+    SWire.begin();
+    SWire.setClock(100000);
+#endif
+
+    Serial.begin(115200);
+    while (!Serial);
+}
+
+#define ENABLE_INHALATION_PRESSURE_SENSOR 1
+#define ENABLE_EXHALATION_PRESSURE_SENSOR 1
+#define ENABLE_INHALATION_FLOW_SENSOR 1
+#define ENABLE_EXHALATION_FLOW_SENSOR 1
+#define ENABLE_HUMIDITY_TEMPERATURE_SENSOR 0
+
+#define ENABLE_ALARM 1
+#define ENABLE_O2_VALVE_SERVO 1
+#define ENABLE_AIR_VALVE_SERVO 1
 
 void ConfigureDefaultUIState(UIState& uiState)
 {
@@ -1752,9 +1765,7 @@ void loop()
     long lastNoiseTimeMs = 0;
 #endif
 
-    // float lpf = 0.0f;
     long lastUpdateMs = 0;
-    // long lastSendMs = 0;
 
     UIState uiState;
     Zero(uiState);
@@ -1787,7 +1798,6 @@ void loop()
     {
         long nowMs = millis();
         float deltaSeconds = (nowMs - lastUpdateMs) / 1000.0f;
-        float totalSeconds = nowMs / 1000.0f;
 
         lastUpdateMs = nowMs;
 
@@ -1864,12 +1874,6 @@ void loop()
         o2Opening = Clamp01(o2Opening);
         airOpening = Clamp01(airOpening);
 
-        // long intSecs = static_cast<long>(totalSeconds);
-        // float pos = (intSecs / 4 % 2 == 0) ? 1.0f : 0.0f;
-
-        // o2Opening = pos;
-        // airOpening = pos;
-
         //@TODO: map to physical valve response
 #if ENABLE_O2_VALVE_SERVO
         o2Valve.SetPosition01(o2Opening);
@@ -1878,11 +1882,6 @@ void loop()
 #if ENABLE_AIR_VALVE_SERVO
         airValve.SetPosition01(airOpening);
 #endif
-
-        // float secondsSinceStart = nowMs / 1000.0f;
-        // float rawSine = sin(secondsSinceStart * 2.0f) * 4.0f;
-        // rawSine = Clamp(rawSine, -1.0f, 1.0f) * 50.0f;
-        // lpf = LowPassFilter(lpf, rawSine, 0.05f, );
 
         // if (nowMs - lastSendMs > kMachineStateSendIntervalMs)
         {
@@ -1906,51 +1905,8 @@ void loop()
             machineState.IERatio = triggerLogic.GetIERatio();
             machineState.InstantBreathPhase = triggerLogic.GetBreathPhase();
 
-            // switch (triggerLogic.GetBreathPhase())
-            // {
-            //     case BreathPhase::Inhalation: machineState.TotalFlowLitersPerMin = 40.0f; break;
-            //     case BreathPhase::Exhalation: machineState.TotalFlowLitersPerMin = 20.0f; break;
-            //     case BreathPhase::Rest: machineState.TotalFlowLitersPerMin = 0.0f; break;
-            // }
-            
-            // machineState.Debug1 = peepPressureTracker.IsTracking();
-            // machineState.Debug2 = gf1;
-            // machineState.Debug3 = gf2;
-            // machineState.Debug4 = gf3;
-            // machineState.Debug4 = gf4;
-
-            // machineState.Debug1 = uiState.InspirationTime;
-            
-            // machineState.Debug1 = lung.GetContainedGas();
-            // machineState.Debug2 = lung.GetFlowSlpm();
-
-            machineState.Debug1 = error;
-            machineState.Debug2 = correction;
-            machineState.Debug3 = targetInhalationPressure;
-            // machineState.Debug4 = errorRate;
-            // machineState.Debug5 = correctionP;
-            // machineState.Debug6 = correctionD;
-
             SendMachineState(machineState);
-            // PrintStringFloat("pos", pos); Ln();
 
-            // DEFAULT_PRINT->print(nowMs);
-            // DEFAULT_PRINT->print(", ");
-            // PrintFloat(lung.GetContainedGas());
-            // DEFAULT_PRINT->print(", ");
-            // PrintFloat(globalDebugFloat1);
-            // DEFAULT_PRINT->print(", ");
-            // PrintFloat(globalDebugFloat2);
-            // DEFAULT_PRINT->print(", ");
-            // PrintFloat(globalDebugFloat3);
-            // Ln();
-            
-            // This will possibly skip some updates if our update loop is not running fast enough
-            // if (nowMs - lastSendMs > kMachineStateSendIntervalMs)
-            {
-                // delay(40);
-                // lastSendMs = nowMs;
-            }
             delay(5);
         }
     }
