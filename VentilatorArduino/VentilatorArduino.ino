@@ -9,7 +9,7 @@
 // -proportional O2 valve: servo on D4
 // -proportional air valve: servo on D5
 
-#define VIRTUAL_INPUTS 1
+#define VIRTUAL_INPUTS 0
 
 #if !VIRTUAL_INPUTS
 #include <Wire.h>
@@ -692,12 +692,14 @@ public:
     {
 #if !VIRTUAL_INPUTS
         EnsureDeviceIsResponsive();
+        
 
         // Discard the first two bytes, which may or may not be the serial depending on how long it's been since boot
         ReadTwoBytes();
         CommandDelay();
         ReadTwoBytes();
         CommandDelay();
+        
 
         // Request serial number
         _i2c.beginTransmission(kI2cAddress);
@@ -903,7 +905,9 @@ private:
 class ProportionalValve
 {
 public:
-	ProportionalValve(int pin)
+	ProportionalValve(int pin, float closedAngle, float openAngle)
+        : _closedAngle(closedAngle)
+        , _openAngle(openAngle)
 	{
 		_servo.attach(pin, 550, 2300);
 	}
@@ -912,7 +916,8 @@ public:
 	{
         //@TODO: map to physical valve response
         _targetPosition = Clamp01(position01);
-		int angle = int(0 + (_position) * 90);
+        float angleFloat = Lerp(_closedAngle, _openAngle, _targetPosition);
+		int angle = static_cast<int>(angleFloat);
 		_servo.write(angle);
 	}
 
@@ -931,8 +936,12 @@ public:
 private:
 	Servo _servo;
 
-#if VIRTUAL_INPUTS
+    float _closedAngle = 0.0f;
+    float _openAngle = 0.0f;
+
     float _targetPosition = 0.0f;
+
+#if VIRTUAL_INPUTS
     float _position = 0.0f;
 #endif
 };
@@ -1733,10 +1742,10 @@ void loop()
 #endif
 
 #if ENABLE_O2_VALVE_SERVO
-    ProportionalValve o2Valve(PIN_O2_VALVE);
+    ProportionalValve o2Valve(PIN_O2_VALVE, 14.0f, 124.0f);
 #endif
 #if ENABLE_AIR_VALVE_SERVO
-    ProportionalValve airValve(PIN_AIR_VALVE);
+    ProportionalValve airValve(PIN_AIR_VALVE, 3.0f, 90.0f);
 #endif
 
 #if ENABLE_ALARM
@@ -1778,6 +1787,7 @@ void loop()
     {
         long nowMs = millis();
         float deltaSeconds = (nowMs - lastUpdateMs) / 1000.0f;
+        float totalSeconds = nowMs / 1000.0f;
 
         lastUpdateMs = nowMs;
 
@@ -1836,7 +1846,7 @@ void loop()
         lastError = error;
         
         const float kP = 0.5f;
-        const float kD = 0.04f;
+        const float kD = 0.0f;
         // const float kD = 0.0f;
 
         float correctionP = error * kP * deltaSeconds;
@@ -1853,6 +1863,12 @@ void loop()
 
         o2Opening = Clamp01(o2Opening);
         airOpening = Clamp01(airOpening);
+
+        // long intSecs = static_cast<long>(totalSeconds);
+        // float pos = (intSecs / 4 % 2 == 0) ? 1.0f : 0.0f;
+
+        // o2Opening = pos;
+        // airOpening = pos;
 
         //@TODO: map to physical valve response
 #if ENABLE_O2_VALVE_SERVO
@@ -1905,17 +1921,18 @@ void loop()
 
             // machineState.Debug1 = uiState.InspirationTime;
             
-            machineState.Debug1 = lung.GetContainedGas();
-            machineState.Debug2 = lung.GetFlowSlpm();
+            // machineState.Debug1 = lung.GetContainedGas();
+            // machineState.Debug2 = lung.GetFlowSlpm();
 
-            // machineState.Debug1 = error;
-            // machineState.Debug2 = correction;
-            // machineState.Debug3 = targetInhalationPressure;
+            machineState.Debug1 = error;
+            machineState.Debug2 = correction;
+            machineState.Debug3 = targetInhalationPressure;
             // machineState.Debug4 = errorRate;
             // machineState.Debug5 = correctionP;
             // machineState.Debug6 = correctionD;
 
             SendMachineState(machineState);
+            // PrintStringFloat("pos", pos); Ln();
 
             // DEFAULT_PRINT->print(nowMs);
             // DEFAULT_PRINT->print(", ");
