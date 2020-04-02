@@ -90,17 +90,21 @@ class UIElementRT extends UIElement
 
 class UIText extends UIElement
 {
+  final private static int BASE_HEIGHT = 600;
   private String _text;
-  private PFont _font;
+  private PFont[] _font;
+  private int _fontIndex;
+  private float _baseTextSize;
   private float _textSize;
   private color _textColor;
   private int _alignX, _alignY;
 
-  public UIText(float fracW, float fracH, String text, PFont font, float textSize, color textColor, int alignX, int alignY)
+  public UIText(float fracW, float fracH, String text, PFont[] font, float textSize, color textColor, int alignX, int alignY)
   {
     super(fracW, fracH);
     _text = text;
     _font = font;
+    _baseTextSize = textSize;
     _textSize = textSize;
     _textColor = textColor;
     _alignX = alignX;
@@ -110,6 +114,13 @@ class UIText extends UIElement
   public void SetText(String text)
   {
     _text = text;
+  }
+
+  protected void OnResize()
+  {
+    super.OnResize();
+    _textSize = _baseTextSize * height / BASE_HEIGHT;
+    _fontIndex = _textSize < 96 ? 0 : 1;
   }
 
   public void Render()
@@ -150,7 +161,7 @@ class UIText extends UIElement
     // maybe snap to specific multiples of original fontSize?
     textAlign(_alignX, _alignY);
     fill(_textColor);
-    textFont(_font, _textSize);
+    textFont(_font[_fontIndex], _textSize);
     text(_text, x, y);
   }
 }

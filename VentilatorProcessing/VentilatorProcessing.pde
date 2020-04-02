@@ -1,6 +1,6 @@
 import processing.serial.*;
 
-final int APP_FRAMERATE = 60;
+final static int APP_FRAMERATE = 60;
 boolean appFullScreen = false;
 boolean appTouchScreen = false;
 boolean appSmooth = true;
@@ -13,7 +13,7 @@ UIInfoText infoPPeak, infoPMean, infoPPlat, infoPEEP, infoRR, infoIE, infoMVe, i
 UITrackBar trackBar;
 UIGroup runtimeGroup, mainGroup, dataGroup, graphGroup, infoGroup, controlsGroup, rightGroup;
 
-PFont fontBold, fontSemilight;
+PFont[] fontBold, fontSemilight;
 color colorPressure = #ffbb00;
 color colorFlow = #00ff99;
 color colorVolume = #0099ff;
@@ -29,7 +29,6 @@ void settings()
     fullScreen(P2D);
   else
     size(960, 600, P2D);// Half of target resolution
-    // size(800, 500, P2D);
     // size(832, 520, P2D);
 
   if (appSmooth)
@@ -49,8 +48,12 @@ void setup()
     noCursor();
   }
 
-  fontBold = loadFont("SegoeUI_Bold_64.vlw");
-  fontSemilight = loadFont("SegoeUI_Semilight_64.vlw");
+  fontBold = new PFont[2];
+  fontBold[0] = loadFont("SegoeUI_Bold_64.vlw");
+  fontBold[1] = loadFont("SegoeUI_Bold_128.vlw");
+  fontSemilight = new PFont[2];
+  fontSemilight[0] = loadFont("SegoeUI_Semilight_64.vlw");
+  fontSemilight[1] = loadFont("SegoeUI_Semilight_128.vlw");
 
   UIElement text1, text2, text3, text4, btg, og1;
 
