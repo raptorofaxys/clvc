@@ -1,5 +1,6 @@
 import processing.serial.*;
 
+final int APP_FRAMERATE = 60;
 boolean appFullScreen = false;
 boolean appTouchScreen = false;
 boolean appSmooth = true;
@@ -27,8 +28,9 @@ void settings()
   if (appFullScreen)
     fullScreen(P2D);
   else
-    //size(800, 500, P2D);
-    size(832, 520, P2D);
+    size(960, 600, P2D);// Half of target resolution
+    // size(800, 500, P2D);
+    // size(832, 520, P2D);
 
   if (appSmooth)
     smooth();
@@ -71,9 +73,9 @@ void setup()
     }, 0);
 
   // Graphs
-  graphPressure = new UIGraph(1.0, 1.0, 768, -1, 40.0, #ffbb00);
-  graphFlow = new UIGraph(1.0, 1.0, 768, -100.0, 100.0, #00ff99);
-  graphVolume = new UIGraph(1.0, 1.0, 768, -0.04, 0.8, #0099ff);
+  graphPressure = new UIGraph(1.0, 1.0, 720, -2, 40.0, #ffbb00);
+  graphFlow = new UIGraph(1.0, 1.0, 720, -100.0, 100.0, #00ff99);
+  graphVolume = new UIGraph(1.0, 1.0, 720, -0.04, 0.8, #0099ff);
   graphGroup = new UIVerticalFracGroup(0.8, 1.0, new UIElement[] {graphPressure, graphFlow, graphVolume});
 
   // Info Panel

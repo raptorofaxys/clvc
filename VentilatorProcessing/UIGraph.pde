@@ -1,6 +1,7 @@
 class UIGraph extends UIElementRT
 {
-  final private int FADE_SAMPLES_COUNT = 5;
+  final private int FADE_SAMPLES_COUNT = 10;
+  final private color BG_COLOR = #1e1e1e;
 
   private int _sampleCount;
   private float[] _samplesValue;
@@ -25,8 +26,7 @@ class UIGraph extends UIElementRT
     _rangeMaxY = rangeMaxY;
     _colorLine = colorLine;
     _colorDot = colorLine;
-
-    _samplesBGColor[0] = #1E1E1E;
+    _samplesBGColor[0] = BG_COLOR;
   }
 
   public void SetValue(float value)
@@ -87,7 +87,16 @@ class UIGraph extends UIElementRT
   protected void OnResize()
   {
     super.OnResize();
-    _rangeHeight = Transform.GetH() / (_rangeMaxY - _rangeMinY);
+    int w = Transform.GetW();
+    int h = Transform.GetH();
+    _rangeHeight = h / (_rangeMaxY - _rangeMinY);
+
+    // Draw background
+    _renderTarget.beginDraw();
+    _renderTarget.noStroke();
+    _renderTarget.fill(BG_COLOR);
+    _renderTarget.rect(0f, 2f, w, h - 4f);
+    _renderTarget.endDraw();
   }
 
   public void Update()
@@ -110,28 +119,33 @@ class UIGraph extends UIElementRT
 
     float x1 = _sampleIndex * sampleWidth;
     float x0 = x1 - sampleWidth;
+
+    // Background
     _renderTarget.noStroke();
     for (int i = 0; i < FADE_SAMPLES_COUNT; i++)
     {
       // This does not produce a linear fade but good enough for now
       int alpha = 255 * (FADE_SAMPLES_COUNT - i) / FADE_SAMPLES_COUNT;
-      float stepX = x1 + sampleWidth * i;
-      _renderTarget.fill(GetCurrentBGColor(), alpha);
-      _renderTarget.rect(stepX, 2.0f, sampleWidth, h - 4.0f);
-      _renderTarget.fill(0.0f, alpha);
-      _renderTarget.rect(stepX, 0.0f, sampleWidth, 2.0f);
-      _renderTarget.rect(stepX, h - 2.0f, sampleWidth, 2.0f);
+      int stepW = (int)sampleWidth + 1;
+      int stepX = (int)x1 + stepW * i;
+      color bgColor = lerpColor(GetCurrentBGColor(), BG_COLOR, (float)i / FADE_SAMPLES_COUNT);
+      _renderTarget.fill(bgColor, alpha);
+      _renderTarget.rect(stepX, 2f, stepW, h - 4f);
+      _renderTarget.fill(0, alpha);
+      _renderTarget.rect(stepX, 0f, stepW, 2f);
+      _renderTarget.rect(stepX, h - 2f, stepW, 2f);
     }
 
+    // Curve
     if (_sampleIndex != _sampleCount - 1)
     {
       float y0 = GetYPosition(GetPrevValue());
       float y1 = GetYPosition(GetCurrentValue());
-      _originY = GetYPosition(0);
+      _originY = GetYPosition(0f);
 
       _renderTarget.noFill();
       _renderTarget.stroke(_colorLine);
-      _renderTarget.strokeWeight(1.5f);
+      _renderTarget.strokeWeight(2f);
       _currentX = x1;
       _currentY = y1;
       _renderTarget.line(x0, y0, x1, y1);
@@ -143,10 +157,25 @@ class UIGraph extends UIElementRT
     super.Render();
     int x = Transform.GetX();
     int y = Transform.GetY();
+    int w = Transform.GetW();
+
+    // Origin Axis
     noFill();
     stroke(90);
     strokeWeight(0.5f);
-    line(0.0f, _originY + y, Transform.GetW(), _originY + y);
+    line(x, _originY + y, w, _originY + y);
+
+    // Axis second marks
+    strokeWeight(1f);
+    int secondsCount = _sampleCount / APP_FRAMERATE;
+    float secondWidth = (float)w / _sampleCount * APP_FRAMERATE;
+    for (int i = 1; i < secondsCount; i++)
+    {
+      int secondX = (int)(i * secondWidth + x);
+      line(secondX, _originY + y - 2, secondX, _originY + y + 2);
+    }
+
+    // Current Value Dot
     fill(_colorDot);
     noStroke();
     circle(_currentX + x, _currentY + y, 5.0f);

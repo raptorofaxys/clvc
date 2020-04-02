@@ -66,9 +66,6 @@ class UIElementRT extends UIElement
     int w = max(2, Transform.GetW());
     int h = max(2, Transform.GetH());
     _renderTarget = createGraphics(w, h);
-    _renderTarget.beginDraw();
-    _renderTarget.background(0);
-    _renderTarget.endDraw();
   }
 
   protected void OnResize()
