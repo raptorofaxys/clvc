@@ -128,11 +128,10 @@ void Update()
 
   UpdateSerial();
 
-  float fakeVal1 = noise(millis() * 0.001) * 2.0 * 14.0 + 5.0;
-  float fakeVal2 = (sin(millis() * TWO_PI * 0.00033) + noise(millis() * 0.002) - 0.5) * 0.5;
-
   if (port == null)
   {
+    float fakeVal1 = noise(millis() * 0.001) * 2.0 * 14.0 + 5.0;
+    float fakeVal2 = (sin(millis() * TWO_PI * 0.00033) + noise(millis() * 0.002) - 0.5) * 0.5;
     graphPressure.SetValue(fakeVal1);
     graphFlow.SetValue(fakeVal2 * 60.0);
     graphVolume.SetValue(max(0, fakeVal2 * 500.0));

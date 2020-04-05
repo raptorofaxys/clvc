@@ -258,12 +258,13 @@ class UIMenuButton extends UIButton
 
 class UITrackBar extends UIInteractiveElement
 {
+  private final float MIN_TRACK_SPEED = 0.2;
+  private final float MAX_TRACK_SPEED = 5.0;
   private UIRadioButtonSet _controlButtons;
   private int _pressedY;
   private float _pressedValue;
   private float _trackSpeed;
-  private final float MIN_TRACK_SPEED = 0.2;
-  private final float MAX_TRACK_SPEED = 5.0;
+  private int _offsetY;
 
   public UITrackBar(float fracW, float fracH, float trackSpeed, UIRadioButtonSet controlButtons)
   {
@@ -310,14 +311,65 @@ class UITrackBar extends UIInteractiveElement
     {
       float deltaY = _pressedY - mouseY;
       float value = max(0, min(1, _pressedValue + deltaY / height * _trackSpeed));
+      _offsetY = -(int)deltaY;
       SetControlValue(value);
     }
   }
 
   public void Render()
   {
-    fill(30);
+    int x = Transform.GetX();
+    int y = Transform.GetY();
+    int w = Transform.GetW();
+    int h = Transform.GetH();
+
+    // Strips
+    color c1 = color(55);
+    color c2 = color(50);
+    int stripCount = 20;
+    float stripHeightRatio = 0.2f;
+    float stripPairHeight = h / stripCount;
+    float strip1H = stripPairHeight * stripHeightRatio;
+    float strip2H = stripPairHeight * (1f - stripHeightRatio);
     noStroke();
-    rect(Transform.GetX(), Transform.GetY(), Transform.GetW(), Transform.GetH());
+    for (int i = 0; i < stripCount + 1; i++)
+    {
+      float stripY = y + stripPairHeight * i + _offsetY % stripPairHeight;
+      stripY -= stripY > y + h ? h + stripPairHeight : 0f;
+      fill(c1);
+      rect(x, stripY, w, strip1H);
+      fill(c2);
+      rect(x, stripY + strip1H, w, strip2H);
+    }
+
+    // Gradients
+    int gradH = 10;
+    GradientV(x, y, w, gradH, 0, 150, 0, 0);
+    GradientV(x, y + h - gradH, w, gradH, 0, 0, 0, 150);
+    gradH = (int)(h * 0.4f);
+    GradientV(x, y, w, gradH, 0, 100, 0, 0);
+    GradientV(x, y + h - gradH, w, gradH, 0, 0, 0, 100);
+
+    // Rounded corners
+    fill(0);
+    float cornerRadius = 4f;
+    rect(x, y, cornerRadius, cornerRadius);
+    rect(x + w - cornerRadius, y, cornerRadius, cornerRadius);
+    rect(x, y + h - cornerRadius, cornerRadius, cornerRadius);
+    rect(x + w - cornerRadius, y + h - cornerRadius, cornerRadius, cornerRadius);
+    stroke(0);
+    strokeWeight(4f);
+    noFill();
+    rect(x, y, w, h, 12);
+  }
+
+  private void GradientV(float x, float y, float w, int h, color c1, int alpha1, color c2, int alpha2)
+  {
+    for (int i = 0; i < h; i++)
+    {
+      float ratio = (float)i / h;
+      fill(lerpColor(c1, c2, ratio), lerp(alpha1, alpha2, ratio));
+      rect(x, y + i, w, 1);
+    }
   }
 }
