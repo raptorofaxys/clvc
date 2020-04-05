@@ -344,11 +344,11 @@ class UITrackBar extends UIInteractiveElement
 
     // Gradients
     int gradH = 10;
-    GradientV(x, y, w, gradH, 0, 150, 0, 0);
-    GradientV(x, y + h - gradH, w, gradH, 0, 0, 0, 150);
+    GradientVertical(x, y, w, gradH, 0, 150, 0, 0);
+    GradientVertical(x, y + h - gradH, w, gradH, 0, 0, 0, 150);
     gradH = (int)(h * 0.4f);
-    GradientV(x, y, w, gradH, 0, 100, 0, 0);
-    GradientV(x, y + h - gradH, w, gradH, 0, 0, 0, 100);
+    GradientVertical(x, y, w, gradH, 0, 100, 0, 0);
+    GradientVertical(x, y + h - gradH, w, gradH, 0, 0, 0, 100);
 
     // Rounded corners
     fill(0);
@@ -361,15 +361,5 @@ class UITrackBar extends UIInteractiveElement
     strokeWeight(4f);
     noFill();
     rect(x, y, w, h, 12);
-  }
-
-  private void GradientV(float x, float y, float w, int h, color c1, int alpha1, color c2, int alpha2)
-  {
-    for (int i = 0; i < h; i++)
-    {
-      float ratio = (float)i / h;
-      fill(lerpColor(c1, c2, ratio), lerp(alpha1, alpha2, ratio));
-      rect(x, y + i, w, 1);
-    }
   }
 }
