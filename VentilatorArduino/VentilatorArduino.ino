@@ -9,7 +9,7 @@
 // -proportional O2 valve: servo on D4
 // -proportional air valve: servo on D5
 
-#define VIRTUAL_INPUTS 0
+#define VIRTUAL_INPUTS 1
 
 #if !VIRTUAL_INPUTS
 #include <Wire.h>
@@ -656,7 +656,7 @@ public:
         _totalSeconds += deltaSeconds;
         totalPsi *= 1.0f + sinf(_totalSeconds * 2.0f) * 0.4f;
 
-        _virtualPressureReading = LowPassFilter(_virtualPressureReading, totalPsi, 0.0001f, deltaSeconds);
+        _virtualPressureReading = LowPassFilter(_virtualPressureReading, totalPsi, 0.0000001f, deltaSeconds);
     }
 #endif
 
@@ -924,7 +924,7 @@ public:
 #if VIRTUAL_INPUTS
     void Update(float deltaSeconds)
     {
-        _position = LinearApproach(_position, _targetPosition, 1.5f, deltaSeconds);
+        _position = LinearApproach(_position, _targetPosition, 5.0f, deltaSeconds);
     }
     
     float GetPosition01() const
