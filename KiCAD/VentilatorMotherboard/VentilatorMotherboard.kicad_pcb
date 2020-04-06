@@ -85,11 +85,11 @@
       (plotinvisibletext false)
       (padsonsilk false)
       (subtractmaskfromsilk false)
-      (outputformat 5)
+      (outputformat 4)
       (mirror false)
       (drillshape 2)
       (scaleselection 1)
-      (outputdirectory "SVG/"))
+      (outputdirectory "PDF/"))
   )
 
   (net 0 "")

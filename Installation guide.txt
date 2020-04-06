@@ -1,0 +1,15 @@
+To install firmware:
+-Download the latest Arduino IDE from https://www.arduino.cc/.
+-Run the Arduino IDE.
+-Install the SoftwareWire library using the library manager (Tools/Manage Libraries...).
+-Unzip the firmware.
+-In the Arduino IDE, use the File/Open command and browse the unzipped firmware source code.
+-Upload the firmware to the Arduino using Sketch/Upload.
+
+
+To run PC host software:
+-Download the latest Processing IDE from https://processing.org/.
+-Run the Processing IDE.
+-Unzip the host software.
+-In the Processing IDE, use the File/Open command and browse to the unzipped host software code.
+-Run the software using Sketch/Run.
