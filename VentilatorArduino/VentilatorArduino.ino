@@ -198,7 +198,7 @@ public:
     }
 
 private:
-    long _windowTimeMs;
+    long _windowTimeMs = 0;
     float _currentEventCount = 0.0f;
     long _lastWindowStartMs = 0;
     float _rate = -1.0f;
@@ -449,13 +449,13 @@ private:
     static const int kHeldMs = 800;
 
     char _pin;
-    char _lastValue;
-    bool  _lastHeld;
-    unsigned long _debounceStart;
-    bool _activeLow;
-    bool _justPressed;
-    bool _justHeld;
-    bool _justRelease;
+    char _lastValue = 0;
+    bool  _lastHeld = false;
+    unsigned long _debounceStart = 0;
+    bool _activeLow = false;
+    bool _justPressed = false;
+    bool _justHeld = false;
+    bool _justRelease = false;
 };
 
 /////////////////////////////
@@ -603,19 +603,19 @@ public:
     }
 
 private:
-    int _pin;
-    bool _enabled;
+    int _pin = 0;
+    bool _enabled = false;
 
-    long _lastMs;
+    long _lastMs = 0;
 
-    int _stepLengthMs;
-    int _stepsLeft;
+    int _stepLengthMs = 0;
+    int _stepsLeft = 0;
 
-    float _pitch;
-    float _pitchNudge;
+    float _pitch = 0.0f;
+    float _pitchNudge = 0.0f;
 
-    float _minPitch;
-    float _pitchBump;
+    float _minPitch = 0.0f;
+    float _pitchBump = 0.0f;
 };
 
 /////////////////////////////
@@ -675,7 +675,7 @@ private:
 
 #if VIRTUAL_INPUTS
     float _virtualPressureReading = 0.0f;
-    float _totalSeconds;
+    float _totalSeconds = 0.0f;
 #endif
 };
 
@@ -795,7 +795,7 @@ private:
 
     I2C& _i2c;
 
-    uint32_t _serial;
+    uint32_t _serial = 0;
     
     long _lastUpdateMs = 0;
 
@@ -1140,7 +1140,7 @@ bool ReceiveState(T& state)
     return computedHash == serializedHash;
 }
 
-bool gLastReceiveValid;
+bool gLastReceiveValid = false;
 
 void ReceiveUIState(struct UIState& currentUIState)
 {
@@ -1638,12 +1638,12 @@ public:
 private:
     const float kFlowResistance = 8.0f;
 
-    float _capacityL;
-    float _containedGasL;
+    float _capacityL = 0.0f;
+    float _containedGasL = 0.0f;
 
-    float _pressureAtCapacity;
+    float _pressureAtCapacity = 0.0f;
 
-    float _flowLps;
+    float _flowLps = 0.0f;
 };
 #endif
 
