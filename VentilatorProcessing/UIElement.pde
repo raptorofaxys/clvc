@@ -1,12 +1,14 @@
 class UIElement
 {
-  Transform2D Transform;
-  float FracW, FracH;
+  public Transform2D Transform;
+  public Padding Padding;
+  public float FracW, FracH;
   private int _prevW, _prevH;
 
   public UIElement(int x, int y, int w, int h)
   {
     Transform = new Transform2D(x, y, w, h);
+    Padding = new Padding();
     _prevW = -1;
     _prevH = -1;
   }
@@ -19,6 +21,23 @@ class UIElement
   public UIElement(float fracW, float fracH)
   {
     this(0, 0, 0, 0);
+    FracW = fracW;
+    FracH = fracH;
+  }
+
+  public UIElement(float fracW, float fracH, float paddingAll)
+  {
+    this(0, 0, 0, 0);
+    Padding.SetAll(paddingAll);
+    FracW = fracW;
+    FracH = fracH;
+  }
+
+  public UIElement(float fracW, float fracH, float paddingHorizontal, float paddingVertical)
+  {
+    this(0, 0, 0, 0);
+    Padding.SetHorizontal(paddingHorizontal);
+    Padding.SetVertical(paddingVertical);
     FracW = fracW;
     FracH = fracH;
   }
@@ -157,8 +176,6 @@ class UIText extends UIElement
         break;
     }
 
-    // TODO: size relative to resolution
-    // maybe snap to specific multiples of original fontSize?
     textAlign(_alignX, _alignY);
     fill(_textColor);
     textFont(_font[_fontIndex], _textSize);

@@ -192,9 +192,9 @@ class UIInfoText extends UIHorizontalFracGroup
     label = String.format(" %s", label);
     _textLabel = new UIText(1.0, 1.0, label, fontSemilight, 26, textColor, LEFT, CENTER);
     _textValue = new UIText(1.0, 1.0, "-- ", fontBold, 26, textColor, RIGHT, CENTER);
-    SetChildren(new UIElement[] {_textLabel, _textValue});
     _decimals = decimals;
     _prefix = prefix;
+    SetChildren(new UIElement[] {_textLabel, _textValue});
   }
   public UIInfoText(float fracW, float fracH, String label, color textColor, int decimals)
   {
@@ -227,14 +227,15 @@ class UIControlButton extends UIOverlappingGroup
   {
     super(fracW, fracH, null);
     _button = new UIControlRadioButton(1.0, 1.0, this);
+    _button.Padding.SetAll(2f);
     _textLabel = new UIText(1.0, 0.4, label, fontBold, 20, 100, CENTER, CENTER);
     _textValue = new UIText(1.0, 0.6, "--", fontSemilight, 72, 255, CENTER, TOP);
     _textGroup = new UIVerticalFracGroup(1.0, 1.0, new UIElement[] {_textLabel, _textValue});
-    SetChildren(new UIElement[] {_button, _textGroup});
-    SetValue(value);
     _decimals = decimals;
     _rangeMin = rangeMin;
     _rangeMax = rangeMax;
+    SetChildren(new UIElement[] {_button, _textGroup});
+    SetValue(value);
   }
 
   public UIControlButton(float fracW, float fracH, String label, float value, float rangeMin, float rangeMax)

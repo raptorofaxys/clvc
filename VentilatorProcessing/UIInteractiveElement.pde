@@ -130,7 +130,7 @@ class UIButton extends UIInteractiveElement
     fill(_colorFill);
     stroke(0);
     strokeWeight(4);
-    rect(Transform.GetX(), Transform.GetY(), Transform.GetW(), Transform.GetH(), 12.0f);
+    rect(Transform.GetX() + Padding.GetL(), Transform.GetY() + Padding.GetT(), Transform.GetW() - Padding.GetW(), Transform.GetH() - Padding.GetH(), 12.0f);
   }
 }
 
@@ -237,6 +237,8 @@ class UIMenuButton extends UIButton
   public UIMenuButton(float fracW, float fracH)
   {
     super(fracW, fracH);
+    Padding.SetAll(2f);
+    Padding.SetL(6f);
   }
 
   public void Render()

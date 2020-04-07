@@ -5,6 +5,16 @@ class Transform2D
   private int _minW, _minH;
   private int _maxW, _maxH;
 
+  public Transform2D() {}
+
+  public Transform2D(int x, int y, int w, int h)
+  {
+    _x = x;
+    _y = y;
+    _w = w;
+    _h = h;
+  }
+
   int GetX() { return _x; }
   int GetY() { return _y; }
   int GetW() { return _w; }
@@ -56,14 +66,80 @@ class Transform2D
     _maxH = maxH;
     SetWH(_w, _h);
   }
+}
 
-  public Transform2D() {}
+class Padding
+{
+  private float _l, _r, _t, _b, _w, _h;
 
-  public Transform2D(int x, int y, int w, int h)
+  public Padding() {}
+
+  public Padding(float l, float r, float t, float b)
   {
-    _x = x;
-    _y = y;
-    _w = w;
-    _h = h;
+    _l = l;
+    _r = r;
+    _t = t;
+    _b = b;
+    _w = l + r;
+    _h = t + b;
+  }
+
+  public Padding(float horizontal, float vertical)
+  {
+    this(horizontal, horizontal, vertical, vertical);
+  }
+
+  public Padding(float all)
+  {
+    this(all, all, all, all);
+  }
+
+  public float GetL() { return _l; }
+  public float GetR() { return _r; }
+  public float GetT() { return _t; }
+  public float GetB() { return _b; }
+  public float GetW() { return _w; }
+  public float GetH() { return _h; }
+
+  public void SetL(float value)
+  {
+    _l = value;
+    _w = _r + _l;
+  }
+
+  public void SetR(float value)
+  {
+    _r = value;
+    _w = _r + _l;
+  }
+
+  public void SetT(float value)
+  {
+    _t = value;
+    _h = _t + _b;
+  }
+
+  public void SetB(float value)
+  {
+    _b = value;
+    _h = _t + _b;
+  }
+
+  public void SetAll(float value)
+  {
+    _l = _r = _t = _b = value;
+    _w = _h = value + value;
+  }
+
+  public void SetHorizontal(float value)
+  {
+    _l = _r = value;
+    _w = value + value;
+  }
+
+  public void SetVertical(float value)
+  {
+    _t = _b = value;
+    _h = value + value;
   }
 }

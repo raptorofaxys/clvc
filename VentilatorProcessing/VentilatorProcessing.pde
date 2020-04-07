@@ -130,11 +130,11 @@ void Update()
 
   if (port == null)
   {
-    float fakeVal1 = noise(millis() * 0.001) * 2.0 * 14.0 + 5.0;
-    float fakeVal2 = (sin(millis() * TWO_PI * 0.00033) + noise(millis() * 0.002) - 0.5) * 0.5;
+    float fakeVal1 = noise(millis() * 0.001f) * 2.0f * 14.0f + 5.0f;
+    float fakeVal2 = (sin(millis() * TWO_PI * 0.00033f) + noise(millis() * 0.002f) - 0.5f) * 0.5f;
     graphPressure.SetValue(fakeVal1);
-    graphFlow.SetValue(fakeVal2 * 60.0);
-    graphVolume.SetValue(max(0, fakeVal2 * 500.0));
+    graphFlow.SetValue(fakeVal2 * 60.0f);
+    graphVolume.SetValue(max(0f, fakeVal2 * 0.5f));
   }
 
   UIInteractiveUtils.Reset();
