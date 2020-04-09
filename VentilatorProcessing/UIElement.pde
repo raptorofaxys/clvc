@@ -109,7 +109,6 @@ class UIElementRT extends UIElement
 
 class UIText extends UIElement
 {
-  final private static int BASE_HEIGHT = 600;
   private String _text;
   private PFont[] _font;
   private int _fontIndex;
@@ -138,7 +137,7 @@ class UIText extends UIElement
   protected void OnResize()
   {
     super.OnResize();
-    _textSize = _baseTextSize * height / BASE_HEIGHT;
+    _textSize = _baseTextSize * app.GetHScale();
     _fontIndex = _textSize < 96 ? 0 : 1;
   }
 
@@ -192,4 +191,23 @@ public static String FloatToRoundedString(float value, int decimals)
   String formatString = String.format("%%.%df", decimals);
 
   return String.format(formatString, value);
+}
+
+class UIFont
+{
+  PFont[] _fonts;
+
+  public PFont[] GetFonts()
+  {
+    return _fonts;
+  }
+
+  public void LoadFonts(String[] fontNames)
+  {
+    _fonts = new PFont[fontNames.length];
+    for (int i = 0; i < fontNames.length; i++)
+    {
+      _fonts[i] = loadFont(fontNames[i]);
+    }
+  }
 }

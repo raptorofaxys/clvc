@@ -145,7 +145,7 @@ class UIGraph extends UIElementRT
 
       _renderTarget.noFill();
       _renderTarget.stroke(_colorLine);
-      _renderTarget.strokeWeight(2f);
+      _renderTarget.strokeWeight(2f * app.GetHScale());
       _currentX = x1;
       _currentY = y1;
       _renderTarget.line(x0, y0, x1, y1);
@@ -158,26 +158,30 @@ class UIGraph extends UIElementRT
     int x = Transform.GetX();
     int y = Transform.GetY();
     int w = Transform.GetW();
+    int h = Transform.GetH();
 
-    // Origin Axis
     noFill();
-    stroke(90);
-    strokeWeight(0.5f);
-    line(x, _originY + y, w, _originY + y);
-
     // Axis second marks
-    strokeWeight(1f);
-    int secondsCount = _sampleCount / APP_FRAMERATE;
-    float secondWidth = (float)w / _sampleCount * APP_FRAMERATE;
+    stroke(40);
+    strokeWeight(1f * app.GetHScale());
+    strokeCap(SQUARE);
+    int secondsCount = _sampleCount / app.FRAME_RATE;
+    float secondWidth = (float)w / _sampleCount * app.FRAME_RATE;
+    // float strokeHalfHeight = Transform.GetH() - 8f;
     for (int i = 1; i < secondsCount; i++)
     {
       int secondX = (int)(i * secondWidth + x);
-      line(secondX, _originY + y - 2, secondX, _originY + y + 2);
+      line(secondX, y + 2f, secondX, y + h - 4f);
     }
+
+    // Origin Axis
+    stroke(180);
+    strokeWeight(1f);
+    line(x, _originY + y, w, _originY + y);
 
     // Current Value Dot
     fill(_colorDot);
     noStroke();
-    circle(_currentX + x, _currentY + y, 5.0f);
+    circle(_currentX + x, _currentY + y, 5.0f * app.GetHScale());
   }
 }

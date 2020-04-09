@@ -1,10 +1,31 @@
 import processing.serial.*;
 
-final static int APP_FRAMERATE = 60;
-boolean appFullScreen = false;
-boolean appTouchScreen = false;
-boolean appSmooth = true;
-boolean appDebug = false;
+class App
+{
+  public final int FRAME_RATE = 60;
+  public final int BASE_HEIGHT = 600;
+  public final boolean FULLSCREEN = true;
+  public final boolean TOUCH_SCREEN = false;
+  public final boolean SMOOTH = true;
+  public final boolean DEBUG = false;
+
+  private float _appHScale = 1f;
+  private UIFont _fontBold = new UIFont();
+  private UIFont _fontSemilight = new UIFont();
+
+  public float GetHScale() { return _appHScale; }
+  public void SetHScale(float value) { _appHScale = value; }
+
+  public PFont[] GetFontBold() { return _fontBold.GetFonts(); }
+  public PFont[] GetFontSemilight() { return _fontSemilight.GetFonts(); }
+
+  public void LoadFonts()
+  {
+    _fontBold.LoadFonts(new String[] {"SegoeUI_Bold_64.vlw", "SegoeUI_Bold_128.vlw"});
+    _fontSemilight.LoadFonts(new String[] {"SegoeUI_Semilight_64.vlw", "SegoeUI_Semilight_128.vlw"});
+  }
+}
+App app = new App();
 
 UIMenuButton menuButton;
 UIControlButton controlFiO2, controlPEEP, controlRR, controlInspTime, controlVT, controlIP;
@@ -13,25 +34,22 @@ UIInfoText infoPPeak, infoPMean, infoPPlat, infoPEEP, infoRR, infoIE, infoMVe, i
 UITrackBar trackBar;
 UIGroup runtimeGroup, mainGroup, dataGroup, graphGroup, infoGroup, controlsGroup, rightGroup;
 
-PFont[] fontBold, fontSemilight;
 color colorPressure = #ffbb00;
 color colorFlow = #00ff99;
 color colorVolume = #0099ff;
 
 Serial port;
 long lastSendMs;
-
 UIState uiState = new UIState();
 
 void settings()
 {
-  if (appFullScreen)
-    fullScreen(P2D);
+  if (app.FULLSCREEN)
+    fullScreen(P2D, 2);
   else
-    size(960, 600, P2D);// Half of target resolution
-    // size(832, 520, P2D);
+    size(960, app.BASE_HEIGHT, P2D);
 
-  if (appSmooth)
+  if (app.SMOOTH)
     smooth();
   else
     noSmooth();
@@ -40,20 +58,16 @@ void settings()
 void setup()
 {
   surface.setResizable(true);
-  frameRate(60);
+  frameRate(app.FRAME_RATE);
   background(0);
+  app.SetHScale((float)height / app.BASE_HEIGHT);
+  app.LoadFonts();
 
-  if (appTouchScreen)
+  if (app.TOUCH_SCREEN)
   {
     noCursor();
   }
 
-  fontBold = new PFont[2];
-  fontBold[0] = loadFont("SegoeUI_Bold_64.vlw");
-  fontBold[1] = loadFont("SegoeUI_Bold_128.vlw");
-  fontSemilight = new PFont[2];
-  fontSemilight[0] = loadFont("SegoeUI_Semilight_64.vlw");
-  fontSemilight[1] = loadFont("SegoeUI_Semilight_128.vlw");
 
   UIElement text1, text2, text3, text4, btg, og1;
 
@@ -116,10 +130,11 @@ void draw()
 void Update()
 {
   //* For testing resizable window with the lack of a proper resize event
-  if (!appFullScreen)
+  if (!app.FULLSCREEN)
   {
     runtimeGroup.Transform.SetWH(width, height);
     runtimeGroup.UpdateChildrenLayout();
+    app.SetHScale((float)height / app.BASE_HEIGHT);
   }
   //*/
 
@@ -172,7 +187,7 @@ void UpdateSerial()
 
     if (ms.IsValid())
     {
-      if (appDebug)
+      if (app.DEBUG)
       {
         println("-----");
         println("ms.InhalationPressure: " + ms.InstantInhalationPressure);
