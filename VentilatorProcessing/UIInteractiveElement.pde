@@ -127,9 +127,8 @@ class UIButton extends UIInteractiveElement
 
   public void Render()
   {
+    noStroke();
     fill(_colorFill);
-    stroke(0);
-    strokeWeight(4);
     rect(Transform.GetX() + Padding.GetL(), Transform.GetY() + Padding.GetT(), Transform.GetW() - Padding.GetW(), Transform.GetH() - Padding.GetH(), 12.0f);
   }
 }
@@ -161,7 +160,7 @@ class UIRadioButton extends UIButton
   public void Select()
   {
     _selected = true;
-    _colorFill = 55;
+    _colorFill = 60;
   }
 
   public void UnSelect()
@@ -238,7 +237,7 @@ class UIMenuButton extends UIButton
   {
     super(fracW, fracH);
     Padding.SetAll(2f);
-    Padding.SetL(6f);
+    Padding.SetL(4f);
   }
 
   public void Render()
