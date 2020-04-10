@@ -158,20 +158,26 @@ class UIText extends UIElement
     switch (_alignX)
     {
       case CENTER:
-        x += w / 2;
+        x += w / 2 + Padding.GetL() - Padding.GetR();
         break;
       case RIGHT:
-        x += w;
+        x += w - Padding.GetR();
+        break;
+      case LEFT:
+        x += Padding.GetL();
         break;
     }
     switch (_alignY)
     {
       case CENTER:
-        y += h / 2;
+        y += h / 2 + Padding.GetT() - Padding.GetB();
         break;
       case BOTTOM:
       case BASELINE:
-        y += h;
+        y += h - Padding.GetB();
+        break;
+      case TOP:
+        y += Padding.GetT();
         break;
     }
 

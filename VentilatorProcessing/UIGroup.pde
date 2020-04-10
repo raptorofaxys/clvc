@@ -189,9 +189,11 @@ class UIInfoText extends UIHorizontalFracGroup
   public UIInfoText(float fracW, float fracH, String label, color textColor, int decimals, String prefix)
   {
     super(fracW, fracH, null);
-    label = String.format(" %s", label);
-    _textLabel = new UIText(1.0, 1.0, label, app.GetFontSemilight(), 26, textColor, LEFT, CENTER);
-    _textValue = new UIText(1.0, 1.0, "-- ", app.GetFontBold(), 26, textColor, RIGHT, CENTER);
+    label = String.format("%s", label);
+    _textLabel = new UIText(1f, 1f, label, app.GetFontSemilight(), 26f, textColor, LEFT, CENTER);
+    _textLabel.Padding.SetL(5f);
+    _textValue = new UIText(1f, 1f, "-- ", app.GetFontBold(), 26f, textColor, RIGHT, CENTER);
+    _textValue.Padding.SetR(5f);
     _decimals = decimals;
     _prefix = prefix;
     SetChildren(new UIElement[] {_textLabel, _textValue});
@@ -207,7 +209,7 @@ class UIInfoText extends UIHorizontalFracGroup
 
   public void SetValue(float value)
   {
-    _textValue.SetText(String.format("%s%s ", _prefix, FloatToRoundedString(value, _decimals)));
+    _textValue.SetText(String.format("%s%s", _prefix, FloatToRoundedString(value, _decimals)));
   }
 }
 

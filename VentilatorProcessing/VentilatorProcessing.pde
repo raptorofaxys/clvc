@@ -3,18 +3,22 @@ import processing.serial.*;
 class App
 {
   public final int FRAME_RATE = 60;
+  public final int BASE_WIDTH = 960;
   public final int BASE_HEIGHT = 600;
   public final boolean FULLSCREEN = true;
   public final boolean TOUCH_SCREEN = false;
   public final boolean SMOOTH = true;
   public final boolean DEBUG = false;
+  public final color COLOR_PRESSURE = #ffbb00;
+  public final color COLOR_FLOW = #00ff99;
+  public final color COLOR_VOLUME = #0099ff;
 
   private float _appHScale = 1f;
   private UIFont _fontBold = new UIFont();
   private UIFont _fontSemilight = new UIFont();
 
   public float GetHScale() { return _appHScale; }
-  public void SetHScale(float value) { _appHScale = value; }
+  public void UpdateHScale() { _appHScale = (float)height / BASE_HEIGHT; }
 
   public PFont[] GetFontBold() { return _fontBold.GetFonts(); }
   public PFont[] GetFontSemilight() { return _fontSemilight.GetFonts(); }
@@ -34,10 +38,6 @@ UIInfoText infoPPeak, infoPMean, infoPPlat, infoPEEP, infoRR, infoIE, infoMVe, i
 UITrackBar trackBar;
 UIGroup runtimeGroup, mainGroup, dataGroup, graphGroup, infoGroup, controlsGroup, rightGroup;
 
-color colorPressure = #ffbb00;
-color colorFlow = #00ff99;
-color colorVolume = #0099ff;
-
 Serial port;
 long lastSendMs;
 UIState uiState = new UIState();
@@ -47,7 +47,7 @@ void settings()
   if (app.FULLSCREEN)
     fullScreen(P2D, 2);
   else
-    size(960, app.BASE_HEIGHT, P2D);
+    size(app.BASE_WIDTH, app.BASE_HEIGHT, P2D);
 
   if (app.SMOOTH)
     smooth();
@@ -60,7 +60,7 @@ void setup()
   surface.setResizable(true);
   frameRate(app.FRAME_RATE);
   background(0);
-  app.SetHScale((float)height / app.BASE_HEIGHT);
+  app.UpdateHScale();
   app.LoadFonts();
 
   if (app.TOUCH_SCREEN)
@@ -90,21 +90,21 @@ void setup()
     }, 0);
 
   // Graphs
-  graphPressure = new UIGraph(1.0, 1.0, 720, -2, 40.0, #ffbb00);
-  graphFlow = new UIGraph(1.0, 1.0, 720, -100.0, 100.0, #00ff99);
-  graphVolume = new UIGraph(1.0, 1.0, 720, -0.04, 0.8, #0099ff);
+  graphPressure = new UIGraph(1.0, 1.0, 720, -2, 40.0, app.COLOR_PRESSURE);
+  graphFlow = new UIGraph(1.0, 1.0, 720, -100.0, 100.0, app.COLOR_FLOW);
+  graphVolume = new UIGraph(1.0, 1.0, 720, -0.04, 0.8, app.COLOR_VOLUME);
   graphGroup = new UIVerticalFracGroup(0.8, 1.0, new UIElement[] {graphPressure, graphFlow, graphVolume});
 
   // Info Panel
-  infoPPeak = new UIInfoText(1.0, 1.0, "PPeak", colorPressure);
-  infoPMean = new UIInfoText(1.0, 1.0, "PMean", colorPressure);
-  infoPPlat = new UIInfoText(1.0, 1.0, "PPlat", colorPressure);
-  infoPEEP = new UIInfoText(1.0, 1.0, "PEEP", colorPressure);
-  infoRR = new UIInfoText(1.0, 1.0, "Resp Rate", colorFlow);
-  infoIE = new UIInfoText(1.0, 1.0, "I:E", colorFlow, 1, "1:");
-  infoMVe = new UIInfoText(1.0, 1.0, "MVe", colorVolume, 1);
-  infoVTi = new UIInfoText(1.0, 1.0, "VTi", colorVolume);
-  infoVTe = new UIInfoText(1.0, 1.0, "VTe", colorVolume);
+  infoPPeak = new UIInfoText(1.0, 1.0, "PPeak", app.COLOR_PRESSURE);
+  infoPMean = new UIInfoText(1.0, 1.0, "PMean", app.COLOR_PRESSURE);
+  infoPPlat = new UIInfoText(1.0, 1.0, "PPlat", app.COLOR_PRESSURE);
+  infoPEEP = new UIInfoText(1.0, 1.0, "PEEP", app.COLOR_PRESSURE);
+  infoRR = new UIInfoText(1.0, 1.0, "Resp Rate", app.COLOR_FLOW);
+  infoIE = new UIInfoText(1.0, 1.0, "I:E", app.COLOR_FLOW, 1, "1:");
+  infoMVe = new UIInfoText(1.0, 1.0, "MVe", app.COLOR_VOLUME, 1);
+  infoVTi = new UIInfoText(1.0, 1.0, "VTi", app.COLOR_VOLUME);
+  infoVTe = new UIInfoText(1.0, 1.0, "VTe", app.COLOR_VOLUME);
   infoGroup = new UIVerticalFracGroup(0.2, 1.0, new UIElement[] {infoPPeak, infoPMean, infoPPlat, infoPEEP, infoRR, infoIE, infoMVe, infoVTi, infoVTe});
 
   dataGroup = new UIHorizontalFracGroup(1.0, 0.8, new UIElement[] {graphGroup, infoGroup});
@@ -134,7 +134,7 @@ void Update()
   {
     runtimeGroup.Transform.SetWH(width, height);
     runtimeGroup.UpdateChildrenLayout();
-    app.SetHScale((float)height / app.BASE_HEIGHT);
+    app.UpdateHScale();
   }
   //*/
 

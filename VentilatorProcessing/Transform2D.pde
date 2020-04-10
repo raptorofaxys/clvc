@@ -94,12 +94,12 @@ class Padding
     this(all, all, all, all);
   }
 
-  public float GetL() { return _l; }
-  public float GetR() { return _r; }
-  public float GetT() { return _t; }
-  public float GetB() { return _b; }
-  public float GetW() { return _w; }
-  public float GetH() { return _h; }
+  public float GetL() { return _l * app.GetHScale(); }
+  public float GetR() { return _r * app.GetHScale(); }
+  public float GetT() { return _t * app.GetHScale(); }
+  public float GetB() { return _b * app.GetHScale(); }
+  public float GetW() { return _w * app.GetHScale(); }
+  public float GetH() { return _h * app.GetHScale(); }
 
   public void SetL(float value)
   {
