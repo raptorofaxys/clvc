@@ -2,13 +2,13 @@ import processing.serial.*;
 
 class App
 {
-  public final int FRAME_RATE = 60;
-  public final int BASE_WIDTH = 960;
-  public final int BASE_HEIGHT = 600;
   public final boolean FULLSCREEN = true;
   public final boolean TOUCH_SCREEN = false;
   public final boolean SMOOTH = true;
   public final boolean DEBUG = false;
+  public final int FRAME_RATE = 60;
+  public final int BASE_WIDTH = 960;
+  public final int BASE_HEIGHT = 600;
   public final color COLOR_PRESSURE = #ffbb00;
   public final color COLOR_FLOW = #00ff99;
   public final color COLOR_VOLUME = #0099ff;
